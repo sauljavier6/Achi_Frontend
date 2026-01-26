@@ -1,0 +1,19 @@
+.menuitem {
+  display: block;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  color: #000103;       /* color inicial */
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.3s ease; /* transición suave */
+}
+
+.menuitem:hover,
+.menuitem:focus {
+  color: #6b7280;       /* color al hover/focus */
+}
+
+.linkreset {
+  text-decoration: none;
+  color: inherit;       /* hereda el color del li o .menuitem */
+}

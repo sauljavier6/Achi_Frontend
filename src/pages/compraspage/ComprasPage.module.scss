@@ -1,0 +1,45 @@
+.buttonCrearProducto{
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.buttonCrearProducto:hover{
+    background-color: #0056b3;
+}
+
+.buttonEditarProducto {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.buttonEditarProducto:hover {
+    background-color: #218838;
+}
+
+.buttonEliminarProducto {
+    background-color: #dc3545; /* rojo */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.buttonEliminarProducto:hover {
+    background-color: #c82333; /* rojo más oscuro para hover */
+}
+
+.title {
+  font-size: 35px;     /* o usa 10px si lo quieres aún más pequeño */
+  font-weight: bold;
+  margin: 0;            /* elimina márgenes */
+  padding: 0;           /* por si también hay padding */
+}
