@@ -52,6 +52,7 @@ export default function ShoppingCart() {
     getSubTotal,
     getIva,
     getTotal,
+    getEnvio,
   } = useCart();
   const navigate = useNavigate();
 
@@ -103,46 +104,6 @@ export default function ShoppingCart() {
                 {state.items.length} artículos en tu bolsa
               </p>
             </div>
-
-            {(() => {
-              const FREE_SHIPPING = 2000;
-              const total = getTotal();
-              const remaining = Math.max(FREE_SHIPPING - total, 0);
-              const percent = Math.min((total / FREE_SHIPPING) * 100, 100);
-
-              return (
-                <div className="bg-white dark:bg-[#2d181a] p-5 rounded-xl border border-[#f3e7e8] dark:border-[#3d2023] mb-8 shadow-sm">
-                  <div className="flex justify-between items-center mb-3">
-                    <p className="text-sm font-bold flex items-center gap-2">
-                      <span className="material-symbols-outlined text-primary">
-                        local_shipping
-                      </span>
-
-                      {remaining > 0
-                        ? `Faltan $${remaining.toFixed(2)} para envío gratis`
-                        : "🎉 ¡Ya tienes envío gratis!"}
-                    </p>
-
-                    <p className="text-xs font-bold text-primary">
-                      {percent.toFixed(0)}%
-                    </p>
-                  </div>
-
-                  <div className="h-2 w-full bg-[#f3e7e8] dark:bg-[#3d2023] rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-primary transition-all duration-300"
-                      style={{ width: `${percent}%` }}
-                    ></div>
-                  </div>
-
-                  <p className="mt-2 text-xs text-[#9a4c52] dark:text-[#c47c82]">
-                    {remaining > 0
-                      ? "¡Casi lo tienes! Agrega un accesorio para ahorrar en el envío."
-                      : "Disfruta tu envío sin costo 🚀"}
-                  </p>
-                </div>
-              );
-            })()}
 
             <div className="space-y-4">
               {state.items.length === 0 ? (
@@ -304,22 +265,22 @@ export default function ShoppingCart() {
                       ${getSubTotal().toFixed(2)}
                     </span>
                   </div>
-                  {/*<div className="flex justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">
-                      Envío Estimado
-                    </span>
-                    <span className="font-bold text-green-600">$5.00</span>
-                  </div>*/}
                   <div className="flex justify-between">
                     <span className="text-gray-500 dark:text-gray-400">
                       Impuestos
                     </span>
                     <span className="font-bold">${getIva().toFixed(2)}</span>
                   </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500 dark:text-gray-400">
+                      Envío Estimado
+                    </span>
+                    <span className="font-bold text-green-600">${getSubTotal() === 0 ? 0 : getEnvio().toFixed(2)}</span>
+                  </div>
                   <div className="flex justify-between pt-4 border-t border-[#f3e7e8] dark:border-[#3d2023]">
                     <span className="text-lg font-black uppercase">Total</span>
                     <span className="text-2xl font-black text-primary">
-                      ${getTotal().toFixed(2)}
+                      ${getSubTotal() === 0 ? 0 : getTotal().toFixed(2)}
                     </span>
                   </div>
                 </div>

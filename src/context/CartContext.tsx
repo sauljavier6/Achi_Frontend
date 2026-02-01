@@ -99,6 +99,7 @@ interface CartContextProps {
   getSubTotal: () => number;
   getIva: () => number;
   getTotal: () => number;
+  getEnvio: () => number;
 }
 
 const CartContext = createContext<CartContextProps | undefined>(undefined);
@@ -138,12 +139,15 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   // Total del IVA
   const getIva = () => state.items.reduce((acc:number, item: {Saleprice: number; Quantity: number; Iva: number}) => acc + (item.Saleprice * item.Quantity * item.Iva), 0);
 
+  //
+  const getEnvio = () => 500; 
+
   // Total general (subtotal + IVA)
-  const getTotal = () => getSubTotal() + getIva();
+  const getTotal = () => getSubTotal() + getIva() + getEnvio();
 
   return (
     <CartContext.Provider
-      value={{ state, addItem, removeItem, clearCart, increaseQty, decreaseQty, getSubTotal, getIva, getTotal }}
+      value={{ state, addItem, removeItem, clearCart, increaseQty, decreaseQty, getSubTotal, getIva, getTotal, getEnvio }}
     >
       {children}
     </CartContext.Provider>
