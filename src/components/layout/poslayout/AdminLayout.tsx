@@ -68,7 +68,7 @@ useEffect(() => {
                   </svg>
               </button>
                 <img src="/medicare.png" className="h-8 me-3 rounded" alt="FlowBite Logo" />
-                <span className="self-center text-xl font-semibold sm:text-2xl whitespace-nowrap dark:text-white">MEDICARE TJ</span>
+                {/*<span className="self-center text-xl font-semibold sm:text-2xl whitespace-nowrap dark:text-white">Cristian shop</span>*/}
             </div>
             <div className="flex items-center">
                 <div className="relative flex items-center ms-3">

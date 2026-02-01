@@ -1,12 +1,10 @@
-import CatalogoProducts from "../../../components/ecommercecomponents/catalogoproducts/CatalogoProducts";
+import Catalogo from "../../../components/ecommercecomponents/landingcomponents/Catalogo";
 
 function ProductsPage() {
+  
+  
   return (
-  <div className="flex min-h-screen">
-    <div>
-      <CatalogoProducts />
-    </div>
-  </div>
+   <Catalogo/>
   );
 }
 

@@ -1,18 +1,17 @@
-import BannerBar from "../../../components/ecommercecomponents/bannerbar/BannerBar";
-import BestProducts from "../../../components/ecommercecomponents/bestproducts/BestProducts";
-import Carousel from "../../../components/ecommercecomponents/carrusel/Carrusel";
-import CatalogoBanner from "../../../components/ecommercecomponents/catalogobanner/CatalogoBanner";
+import Hero from "../../../components/ecommercecomponents/landingcomponents/Hero";
+import ProductCarousel from "../../../components/ecommercecomponents/landingcomponents/ProductCarousel";
+import PromoBanner from "../../../components/ecommercecomponents/landingcomponents/PromoBanner";
+import SportsGrid from "../../../components/ecommercecomponents/landingcomponents/SportsGrid";
 
 function HomePage() {
   return (
-    <div>
-      <Carousel />
-      <BannerBar />
-      <BestProducts />
-      <CatalogoBanner />
+    <div className="min-h-screen w-full bg-white overflow-x-hidden">
+      <Hero />
+      <ProductCarousel />
+      <SportsGrid />
+      <PromoBanner />
     </div>
   );
 }
-
 
 export default HomePage;

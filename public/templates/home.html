@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Página de Inicio - Sport Store</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ee2b3b",
+                        "background-light": "#f8f6f6",
+                        "background-dark": "#221012",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Lexend', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-[#1b0d0f] dark:text-white transition-colors duration-300">
+<!-- Top Navigation Bar -->
+<header class="sticky top-0 z-50 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-solid border-[#f3e7e8] dark:border-white/10">
+<div class="max-w-[1440px] mx-auto px-6 lg:px-12 flex items-center justify-between h-20">
+<!-- Logo Section -->
+<div class="flex items-center gap-4">
+<div class="text-primary size-8">
+<svg fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path d="M42.1739 20.1739L27.8261 5.82609C29.1366 7.13663 28.3989 10.1876 26.2002 13.7654C24.8538 15.9564 22.9595 18.3449 20.6522 20.6522C18.3449 22.9595 15.9564 24.8538 13.7654 26.2002C10.1876 28.3989 7.13663 29.1366 5.82609 27.8261L20.1739 42.1739C21.4845 43.4845 24.5355 42.7467 28.1133 40.548C30.3042 39.2016 32.6927 37.3073 35 35C37.3073 32.6927 39.2016 30.3042 40.548 28.1133C42.7467 24.5355 43.4845 21.4845 42.1739 20.1739Z" fill="currentColor"></path>
+</svg>
+</div>
+<h2 class="text-xl font-black uppercase tracking-tighter">Sport Store</h2>
+</div>
+<!-- Navigation Links -->
+<nav class="hidden md:flex items-center gap-10">
+<a class="text-sm font-bold uppercase tracking-wide hover:text-primary transition-colors" href="#">Hombre</a>
+<a class="text-sm font-bold uppercase tracking-wide hover:text-primary transition-colors" href="#">Mujer</a>
+<a class="text-sm font-bold uppercase tracking-wide hover:text-primary transition-colors" href="#">Niños</a>
+<a class="text-sm font-bold uppercase tracking-wide text-primary" href="#">Ofertas</a>
+</nav>
+<!-- Actions -->
+<div class="flex items-center gap-4">
+<div class="hidden lg:flex items-center bg-[#f3e7e8] dark:bg-white/5 rounded-full px-4 py-2">
+<span class="material-symbols-outlined text-sm">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-32 placeholder:text-[#9a4c52]" placeholder="Buscar" type="text"/>
+</div>
+<button class="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors">
+<span class="material-symbols-outlined">favorite</span>
+</button>
+<button class="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors relative">
+<span class="material-symbols-outlined">shopping_bag</span>
+<span class="absolute top-1 right-1 bg-primary text-white text-[10px] font-bold px-1.5 rounded-full">2</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Hero Section -->
+<section class="relative w-full h-[90vh] flex items-end">
+<div class="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat" data-alt="Professional athlete running fast on stadium track" style='background-image: linear-gradient(rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.7) 100%), url("https://lh3.googleusercontent.com/aida-public/AB6AXuAfBSAh_0y6XxA2i1Dc3bE69PXEfOMQXWX2W5pr_G3XGJQOkBPbQbZRa3qoC4Kl_AgF4EGUfLuJDcpCLzZ40rs89XmcYPrk0tv5QMjLJayARxs-dNk-R1vh4B0VNwiZyAy6GhJpW8xdWZSkiY-NO12_8EaTWqtcL-lRPcETqpbU1x88jBtsYInOcIAiUvqsUB6W0uUMMKb4vEkG9FB6Es3kxnaQk_r2lUETfSHmxydoxnVamDHif0aqhtaLBRPawc9Kl-H1l5Xu7XE");'>
+</div>
+<div class="relative z-10 max-w-[1440px] mx-auto px-6 lg:px-12 pb-20 w-full">
+<div class="max-w-3xl space-y-6">
+<span class="inline-block bg-primary text-white text-xs font-black px-3 py-1 uppercase tracking-widest rounded">Nueva Temporada</span>
+<h1 class="text-white text-6xl md:text-8xl font-black uppercase leading-[0.9] tracking-tighter italic">
+                    ULTRA-PERFORMANCE GEAR
+                </h1>
+<p class="text-white/80 text-lg md:text-xl font-normal max-w-xl">
+                    Supera tus límites con la nueva tecnología de amortiguación y tejidos transpirables diseñados para la élite.
+                </p>
+<div class="flex flex-wrap gap-4 pt-4">
+<button class="bg-primary hover:bg-[#d42634] text-white px-8 py-4 rounded-lg font-bold uppercase tracking-wide transition-transform active:scale-95">
+                        Comprar Ahora
+                    </button>
+<button class="bg-white hover:bg-gray-100 text-black px-8 py-4 rounded-lg font-bold uppercase tracking-wide transition-transform active:scale-95">
+                        Ver Colección
+                    </button>
+</div>
+</div>
+</div>
+</section>
+
+<!-- Novedades (Carousel Section) -->
+<main class="max-w-[1440px] mx-auto py-16 px-6 lg:px-12">
+<div class="flex items-center justify-between mb-8">
+<h2 class="text-3xl font-black uppercase tracking-tight italic">Novedades</h2>
+<div class="flex gap-2">
+<button class="size-10 rounded-full border border-gray-200 dark:border-white/10 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<button class="size-10 rounded-full border border-gray-200 dark:border-white/10 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-white/5 transition-colors text-primary">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+<div class="flex overflow-x-auto gap-6 pb-8 snap-x no-scrollbar">
+<!-- Product 1 -->
+<div class="min-w-[320px] lg:min-w-[400px] flex-none group snap-start">
+<div class="relative aspect-[4/5] overflow-hidden rounded-xl bg-gray-100 dark:bg-white/5">
+<div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" data-alt="Modern running shoe white and red" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCZ_04NpFi2Tpy1Wl-Y354H2bCLKIA7yBgQYz3Csmwq5hhnoGVwVR_fyhbl6a2Kn4vl83ItdC2GiWnirci9aEfTthCXiCnNIbL6wmpMv4wrIQYmvrE3iFNxTonfTrD9b0ylG33XgCF3SQKsWdlcqnz5Np7-kLVwY_ZSoAn48E_Ey0PeM3GDiZGYgWXwK7JMzjDhQxWFVgbEwFaEhG7a7uNSeW7Y6RTIsRgUEP2WiaOLLeWtZ6BpX9IWiMX8V6Ufc0Bt3S9gyPPqYy0");'></div>
+<button class="absolute top-4 right-4 size-10 bg-white dark:bg-background-dark rounded-full flex items-center justify-center shadow-lg hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-xl">favorite</span>
+</button>
+</div>
+<div class="mt-4 flex justify-between items-start">
+<div>
+<h3 class="font-bold text-lg">Air Max Sport v2</h3>
+<p class="text-[#9a4c52] text-sm">Zapatillas de Running</p>
+</div>
+<p class="font-black text-lg text-primary">$129.99</p>
+</div>
+</div>
+<!-- Product 2 -->
+<div class="min-w-[320px] lg:min-w-[400px] flex-none group snap-start">
+<div class="relative aspect-[4/5] overflow-hidden rounded-xl bg-gray-100 dark:bg-white/5">
+<div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" data-alt="Black compression training shirt for men" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuC1bbistaadBQOwD1CjH1xQpYnfk8hjigaXg63CtI5mcxwn4dMS_nxmKnjNOD8NJcTRyM-CrSycMT6Feg96DBsPpIoL6i5M3tHIY_gAx2MLrOE1DQt814L3pyvtttoaU3iJxSyMJUwNFohI9cBuWKc71uWBeD_TY1dT_9oepf4HOfutanKK8_ry8cxj-kRh0rfYP7yKB74sG97JMJFGX-lvhZwZbX13EY2R-eb5I9UUQ-OhaTLXaes1ByCfSfZrFfUSC-F6hT4a74w");'></div>
+<button class="absolute top-4 right-4 size-10 bg-white dark:bg-background-dark rounded-full flex items-center justify-center shadow-lg">
+<span class="material-symbols-outlined text-xl">favorite</span>
+</button>
+</div>
+<div class="mt-4 flex justify-between items-start">
+<div>
+<h3 class="font-bold text-lg">Pro Dri-FIT Elite</h3>
+<p class="text-[#9a4c52] text-sm">Camiseta de Entrenamiento</p>
+</div>
+<p class="font-black text-lg text-primary">$45.00</p>
+</div>
+</div>
+<!-- Product 3 -->
+<div class="min-w-[320px] lg:min-w-[400px] flex-none group snap-start">
+<div class="relative aspect-[4/5] overflow-hidden rounded-xl bg-gray-100 dark:bg-white/5">
+<div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" data-alt="Athletic black shorts for yoga and running" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDEzgjlEZSkTeMVsf-tqy6-zUetuat1_qFtd4XBfM613AHnUAxjuVXtP1O2sUovXX9yiZPs3pvEmRSpyHlvmshhlrGBkrt1cc0W6gQDzvsRRf-6NE-LwHCI_fHloeJBa_f4AYkugMnFLFT1meQp6h_z9Lk0uhR5vK-t-FxKNlFDEae7NV6afp0r9ausLWriH5cLGtTu2Eo8U7GnLncZB9dCb5H97AvMcS86nbgr15PlD27v8PkuShvMPtXtI5ndAqZbNg8ndesSyIM");'></div>
+<button class="absolute top-4 right-4 size-10 bg-white dark:bg-background-dark rounded-full flex items-center justify-center shadow-lg">
+<span class="material-symbols-outlined text-xl">favorite</span>
+</button>
+</div>
+<div class="mt-4 flex justify-between items-start">
+<div>
+<h3 class="font-bold text-lg">Elite Motion Shorts</h3>
+<p class="text-[#9a4c52] text-sm">Pantalones Cortos</p>
+</div>
+<p class="font-black text-lg text-primary">$35.00</p>
+</div>
+</div>
+<!-- Product 4 -->
+<div class="min-w-[320px] lg:min-w-[400px] flex-none group snap-start">
+<div class="relative aspect-[4/5] overflow-hidden rounded-xl bg-gray-100 dark:bg-white/5">
+<div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" data-alt="Windproof running jacket in red" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuD0Vft_3eVDbFrCmDkd60NBaZj0Op5JRNad7cQWpSyni_29IHBvzBVENssxQ3W8YdNtJjtzMBKQGCP9U0t6d_twTSUsDwl9CORZ_x9CxqNjt1SXgdDMtWwmHClU_2dG97Cr5LFWI9MA285cRmlrQbRX0hhXO9MBB8dRzZvCjuR2y37mjQ1l94lqr-CBSW2tMXbSKF2H9YWftbSQroRA5_60e_Yj80GSOSk6RdhTPRcnetIEZ5TVbkYqnCFLB_M_OCv1hDHIEa9CeF4");'></div>
+<button class="absolute top-4 right-4 size-10 bg-white dark:bg-background-dark rounded-full flex items-center justify-center shadow-lg">
+<span class="material-symbols-outlined text-xl">favorite</span>
+</button>
+</div>
+<div class="mt-4 flex justify-between items-start">
+<div>
+<h3 class="font-bold text-lg">Shield Runner Shell</h3>
+<p class="text-[#9a4c52] text-sm">Cortavientos</p>
+</div>
+<p class="font-black text-lg text-primary">$89.00</p>
+</div>
+</div>
+</div>
+</main>
+<!-- Explorar por Deporte -->
+<section class="max-w-[1440px] mx-auto py-16 px-6 lg:px-12">
+<h2 class="text-3xl font-black uppercase tracking-tight italic mb-8">Explorar por Deporte</h2>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<!-- Training -->
+<div class="relative group h-[500px] overflow-hidden rounded-xl bg-black">
+<div class="absolute inset-0 bg-cover bg-center opacity-70 transition-transform duration-1000 group-hover:scale-105" data-alt="Woman lifting weights in a modern gym" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAeVz0VL3b3kOMvOzCOGmTEL82kMEMGsavvTiK-yiBwvFHr5cOTvcEvzumXzf6QpD2KmjdLjVNUrNGPlRP8f5XrpRSSdouo65jAPeOJWf_zvFjxCrgwp4gf5NXsQoBFEM6x319qdACus9b-JnxVf5TcmrZZ-cy5qjuYhzjm9XssPI8ddcrWvTlkynCCmrq00VxqKuenetPUMqQ4vAjvR4rKVPLyxgPHIX4U_bLUYEhE71Y0EKxyN4jeQuImQHJSPhU5U_tWsvK3GlQ");'></div>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+<div class="absolute bottom-6 left-6 right-6">
+<h3 class="text-white text-2xl font-black uppercase italic italic">Entrenamiento</h3>
+<a class="text-white text-sm font-bold underline underline-offset-4 mt-2 block opacity-0 group-hover:opacity-100 transition-opacity" href="#">Ver productos</a>
+</div>
+</div>
+<!-- Running -->
+<div class="relative group h-[500px] overflow-hidden rounded-xl bg-black">
+<div class="absolute inset-0 bg-cover bg-center opacity-70 transition-transform duration-1000 group-hover:scale-105" data-alt="Runner's legs in motion on city asphalt" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuATz55mPVOsyALj-JqOA_o0WgQq7n-tGEVbxE2zbx5wBl2NMbBXAFzC9FdshMxD7F5Q4oozeO-_zpCoyvvgHf0v2pKAXMM_18s6HzZUEyjTce2wfEquJqw7_LDMIKitz0Zuo4JzcNJjn9xvIKndbkkP3OmUa2e46LNPGswIdRBD72pf34n-k7mH89Zmn9DCwhRRnKFLUeGiZAq8oNHlH3W2189K5B_CGYFd9EUldFAOBNS6M-mjq3DKFsTzqzIasJRxcmKLHnax8Og");'></div>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+<div class="absolute bottom-6 left-6 right-6">
+<h3 class="text-white text-2xl font-black uppercase italic italic">Running</h3>
+<a class="text-white text-sm font-bold underline underline-offset-4 mt-2 block opacity-0 group-hover:opacity-100 transition-opacity" href="#">Ver productos</a>
+</div>
+</div>
+<!-- Football -->
+<div class="relative group h-[500px] overflow-hidden rounded-xl bg-black">
+<div class="absolute inset-0 bg-cover bg-center opacity-70 transition-transform duration-1000 group-hover:scale-105" data-alt="Soccer ball on green grass with stadium lights" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAuYT8V4tYEG0TZnP7JYJ6o-uygmKjjzH1_r8lWOl64Nh63twioqsLk6wUSxSVpFO3wEI-95ZQpAqmSDkqgxlLyGI6LuVz2XyfgElLRaI7AI8GRM3gtnb65Kk3yC_nRkqJzgCs1l4-Rgml4a1dAvEKo9H2x1bA0svd_spfoKCYuVPiCrBDO2I0CvvQl59xlY_xoPCwTMkoPGRwRaB5BN71PZbVhLp9GwneLJ_gqVRiLLOW7VyHwRVdmR7VX2cBp3VIfdM3d07jjhbE");'></div>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+<div class="absolute bottom-6 left-6 right-6">
+<h3 class="text-white text-2xl font-black uppercase italic italic">Fútbol</h3>
+<a class="text-white text-sm font-bold underline underline-offset-4 mt-2 block opacity-0 group-hover:opacity-100 transition-opacity" href="#">Ver productos</a>
+</div>
+</div>
+<!-- Yoga -->
+<div class="relative group h-[500px] overflow-hidden rounded-xl bg-black">
+<div class="absolute inset-0 bg-cover bg-center opacity-70 transition-transform duration-1000 group-hover:scale-105" data-alt="Person practicing yoga in a bright studio" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCNniRrTds7zaBzod1GZMa4S1do-t5FrZpvF3gyrnxpwVild0B16F-ObabL-P_AgdSCsL_jf3NWaDC353Kr_DiSBO-gnPkCi6Ogmg6CIpy1zBq6WH4uBGzJRBYcfudGjuBvTdfkdW5lCnEuQkAGF2pBsmYBcEL1UsTHjA4cZjYsl0MteLvS8Tw7hVz6nDlS1MdEidkRpb_5FLVgkt5P48GwT_ce_v6N5w9VHbEFqi5BOCZTA2Hyi-H6YKRZ-m2KBFbyxrEYxf-a240");'></div>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+<div class="absolute bottom-6 left-6 right-6">
+<h3 class="text-white text-2xl font-black uppercase italic italic">Yoga &amp; Pilates</h3>
+<a class="text-white text-sm font-bold underline underline-offset-4 mt-2 block opacity-0 group-hover:opacity-100 transition-opacity" href="#">Ver productos</a>
+</div>
+</div>
+</div>
+</section>
+<!-- Promotional Banner -->
+<section class="bg-primary text-white py-12">
+<div class="max-w-[1440px] mx-auto px-6 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-8">
+<div class="text-center md:text-left">
+<h2 class="text-4xl font-black uppercase tracking-tighter italic">FIN DE TEMPORADA</h2>
+<p class="text-xl opacity-90 font-medium">Hasta 40% de descuento en artículos seleccionados.</p>
+</div>
+<button class="bg-white text-primary px-10 py-4 rounded-lg font-black uppercase tracking-widest hover:scale-105 transition-transform">
+                Comprar Sale
+            </button>
+</div>
+</section>
+<!-- Footer -->
+<footer class="bg-white dark:bg-black border-t border-gray-100 dark:border-white/5 py-20 px-6 lg:px-12">
+<div class="max-w-[1440px] mx-auto grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-12">
+<div class="col-span-2">
+<div class="flex items-center gap-3 mb-6">
+<div class="text-primary size-6">
+<svg fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path d="M42.1739 20.1739L27.8261 5.82609C29.1366 7.13663 28.3989 10.1876 26.2002 13.7654C24.8538 15.9564 22.9595 18.3449 20.6522 20.6522C18.3449 22.9595 15.9564 24.8538 13.7654 26.2002C10.1876 28.3989 7.13663 29.1366 5.82609 27.8261L20.1739 42.1739C21.4845 43.4845 24.5355 42.7467 28.1133 40.548C30.3042 39.2016 32.6927 37.3073 35 35C37.3073 32.6927 39.2016 30.3042 40.548 28.1133C42.7467 24.5355 43.4845 21.4845 42.1739 20.1739Z" fill="currentColor"></path>
+</svg>
+</div>
+<h2 class="text-lg font-black uppercase tracking-tighter italic">Sport Store</h2>
+</div>
+<p class="text-gray-500 dark:text-gray-400 max-w-xs mb-8">
+                    Elevando el potencial humano a través del deporte y la innovación. Únete a la comunidad.
+                </p>
+<div class="flex gap-4">
+<a class="size-10 rounded-full border border-gray-200 dark:border-white/10 flex items-center justify-center hover:bg-primary hover:text-white transition-all" href="#">
+<span class="material-symbols-outlined text-base">share</span>
+</a>
+</div>
+</div>
+<div>
+<h4 class="font-black uppercase tracking-widest text-sm mb-6">Explorar</h4>
+<ul class="space-y-4 text-sm text-gray-500 dark:text-gray-400 font-medium">
+<li><a class="hover:text-primary transition-colors" href="#">Localizador de Tiendas</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Sport Store Membership</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Tarjetas de Regalo</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Feedback</a></li>
+</ul>
+</div>
+<div>
+<h4 class="font-black uppercase tracking-widest text-sm mb-6">Ayuda</h4>
+<ul class="space-y-4 text-sm text-gray-500 dark:text-gray-400 font-medium">
+<li><a class="hover:text-primary transition-colors" href="#">Estado del pedido</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Envíos y entregas</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Devoluciones</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Opciones de pago</a></li>
+</ul>
+</div>
+<div>
+<h4 class="font-black uppercase tracking-widest text-sm mb-6">Suscripción</h4>
+<p class="text-xs text-gray-500 mb-4">Recibe las últimas novedades y ofertas exclusivas.</p>
+<div class="flex flex-col gap-3">
+<input class="bg-[#f3e7e8] dark:bg-white/5 border-none rounded-lg text-sm px-4 h-12" placeholder="Email" type="email"/>
+<button class="bg-black dark:bg-white text-white dark:text-black font-bold h-12 rounded-lg text-sm">Unirse</button>
+</div>
+</div>
+</div>
+<div class="max-w-[1440px] mx-auto mt-20 pt-8 border-t border-gray-100 dark:border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 text-[10px] uppercase font-bold tracking-widest text-gray-400">
+<div class="flex gap-8">
+<span>© 2024 Sport Store, Inc. Todos los derechos reservados</span>
+</div>
+<div class="flex gap-8">
+<a class="hover:text-black dark:hover:text-white transition-colors" href="#">Guías</a>
+<a class="hover:text-black dark:hover:text-white transition-colors" href="#">Términos de Uso</a>
+<a class="hover:text-black dark:hover:text-white transition-colors" href="#">Política de Privacidad</a>
+</div>
+</div>
+</footer>
+<style>
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</body></html>
