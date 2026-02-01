@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 export default function PromoBanner() {
   return (
     <section className="bg-primary text-white py-12">
@@ -11,9 +13,12 @@ export default function PromoBanner() {
           </p>
         </div>
 
-        <button className="bg-white text-primary px-10 py-4 rounded-lg font-black uppercase tracking-widest hover:scale-105 transition-transform">
-          Comprar Sale
-        </button>
+        <Link
+          to="/productos"
+          className="bg-white text-primary px-10 py-4 rounded-lg font-black uppercase tracking-widest hover:scale-105 transition-transform inline-block"
+        >
+          Comprar ahora
+        </Link>
       </div>
     </section>
   );

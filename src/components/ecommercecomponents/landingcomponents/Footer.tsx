@@ -15,7 +15,7 @@ export default function Footer() {
               </svg>
             </div>
             <h2 className="text-lg font-black uppercase tracking-tighter italic">
-              Sport Store
+              valentto mx
             </h2>
           </div>
 
@@ -51,28 +51,11 @@ export default function Footer() {
           ]}
         />
 
-        <div>
-          <h4 className="font-black uppercase tracking-widest text-sm mb-6">
-            Suscripción
-          </h4>
-          <p className="text-xs text-gray-500 mb-4">
-            Recibe las últimas novedades y ofertas exclusivas.
-          </p>
-          <div className="flex flex-col gap-3">
-            <input
-              className="bg-[#f3e7e8] dark:bg-white/5 border-none rounded-lg text-sm px-4 h-12"
-              placeholder="Email"
-            />
-            <button className="bg-black dark:bg-white text-white dark:text-black font-bold h-12 rounded-lg text-sm">
-              Unirse
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* Bottom */}
       <div className="max-w-[1440px] mx-auto mt-20 pt-8 border-t border-gray-100 dark:border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 text-[10px] uppercase font-bold tracking-widest text-gray-400">
-        <span>© 2024 Sport Store, Inc. Todos los derechos reservados</span>
+        <span>© 2026 valentto mx, Inc. Todos los derechos reservados</span>
         <div className="flex gap-8">
           <a className="hover:text-black dark:hover:text-white">Guías</a>
           <a className="hover:text-black dark:hover:text-white">

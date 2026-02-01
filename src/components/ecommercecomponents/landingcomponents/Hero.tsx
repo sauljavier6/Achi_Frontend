@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 export default function Hero() {
   return (
     <>
@@ -7,7 +9,7 @@ export default function Hero() {
           className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
           style={{
             backgroundImage:
-              "linear-gradient(rgba(0,0,0,.2), rgba(0,0,0,.7)), url('https://lh3.googleusercontent.com/aida-public/AB6AXuAfBSAh_0y6XxA2i1Dc3bE69PXEfOMQXWX2W5pr_G3XGJQOkBPbQbZRa3qoC4Kl_AgF4EGUfLuJDcpCLzZ40rs89XmcYPrk0tv5QMjLJayARxs-dNk-R1vh4B0VNwiZyAy6GhJpW8xdWZSkiY-NO12_8EaTWqtcL-lRPcETqpbU1x88jBtsYInOcIAiUvqsUB6W0uUMMKb4vEkG9FB6Es3kxnaQk_r2lUETfSHmxydoxnVamDHif0aqhtaLBRPawc9Kl-H1l5Xu7XE')",
+              "linear-gradient(rgba(0,0,0,.3), rgba(0,0,0,.8)), url('/hero-valentto.png')",
           }}
         />
 
@@ -17,21 +19,28 @@ export default function Hero() {
               Nueva Temporada
             </span>
 
-            <h1 className="text-white text-6xl md:text-8xl font-black uppercase leading-[0.9] tracking-tighter italic">
-              ULTRA-PERFORMANCE GEAR
+            <h1 className="text-white text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-black uppercase leading-[0.9] tracking-tighter italic">
+              Define tu estilo
             </h1>
 
-            <p className="text-white/80 text-lg md:text-xl max-w-xl">
-              Supera tus límites con la nueva tecnología de amortiguación.
+            <p className="text-white/80 text-base sm:text-lg md:text-xl max-w-xl">
+              Estilo que impone tendencia. Descubre nuestra nueva colección y
+              redefine tu guardarropa con prendas que hablan por ti.
             </p>
 
             <div className="flex flex-wrap gap-4 pt-4">
-              <button className="bg-primary text-white px-8 py-4 rounded-lg font-bold uppercase">
+              <Link
+                to="/productos"
+                className="bg-primary text-white px-8 py-4 rounded-lg font-bold uppercase"
+              >
                 Comprar Ahora
-              </button>
-              <button className="bg-white text-black px-8 py-4 rounded-lg font-bold uppercase">
+              </Link>
+              <Link
+                to="/productos"
+                className="bg-white text-black px-8 py-4 rounded-lg font-bold uppercase"
+              >
                 Ver Colección
-              </button>
+              </Link>
             </div>
           </div>
         </div>

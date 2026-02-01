@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { useCart } from "../../../context/CartContext";
 import { useNavigate } from "react-router-dom";
-import { getProductByGender, getProductById } from "../../../api/Ecommerce/productsApi/ProductsApi";
+import {
+  getProductByGender,
+  getProductById,
+} from "../../../api/Ecommerce/productsApi/ProductsApi";
 
 interface Category {
   ID_Category: number;
@@ -40,7 +43,7 @@ interface Product {
 
 export default function ShoppingCart() {
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
-    
+
   const {
     state,
     removeItem,
@@ -73,7 +76,7 @@ export default function ShoppingCart() {
     };
 
     fetchProduct();
-  }, [state.items[0].ID_Product]);
+  }, [state?.items[0]?.ID_Product]);
 
   return (
     <div className="bg-background-light dark:bg-background-dark text-[#1b0d0f] dark:text-white min-h-screen">
@@ -242,7 +245,9 @@ export default function ShoppingCart() {
                     <div
                       key={product.ID_Product}
                       className="space-y-2 cursor-pointer"
-                      onClick={() => navigate(`/detalles/${product.ID_Product}`)}
+                      onClick={() =>
+                        navigate(`/detalles/${product.ID_Product}`)
+                      }
                     >
                       <div
                         className="aspect-square bg-white dark:bg-[#2d181a] rounded-lg bg-cover bg-center transition-all hover:scale-105"
@@ -278,13 +283,13 @@ export default function ShoppingCart() {
                   <p className="text-sm font-bold mb-2">
                     ¿Tienes un código de descuento?
                   </p>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <input
-                      className="flex-1 rounded-lg border-[#f3e7e8] dark:border-[#3d2023] bg-background-light dark:bg-background-dark text-sm focus:ring-primary focus:border-primary"
+                      className="w-full flex-1 rounded-lg border-[#f3e7e8] dark:border-[#3d2023] bg-background-light dark:bg-background-dark text-sm focus:ring-primary focus:border-primary"
                       placeholder="Ingresar código"
                       type="text"
                     />
-                    <button className="px-4 py-2 bg-black dark:bg-white text-white dark:text-black text-xs font-black rounded-lg hover:opacity-80 transition-opacity uppercase">
+                    <button className="w-full sm:w-auto px-4 py-2 bg-black dark:bg-white text-white dark:text-black text-xs font-black rounded-lg hover:opacity-80 transition-opacity uppercase">
                       Aplicar
                     </button>
                   </div>

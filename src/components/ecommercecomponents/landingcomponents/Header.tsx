@@ -55,7 +55,8 @@ export default function Header() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-[#f3e7e8] dark:border-white/10">
+  <>
+    <header className="sticky top-0 z-50 bg-white dark:bg-background-dark md:bg-white/80 md:dark:bg-background-dark/80 md:backdrop-blur-md border-b border-[#f3e7e8] dark:border-white/10">
       <div className="mx-auto px-6 lg:px-12 flex items-center justify-between h-20">
         {/* Logo */}
         <div
@@ -71,7 +72,7 @@ export default function Header() {
             </svg>
           </div>
           <h2 className="text-xl font-black uppercase tracking-tighter">
-            Sport Store
+            valentto mx
           </h2>
         </div>
 
@@ -159,41 +160,68 @@ export default function Header() {
           </button>
         </div>
       </div>
-
-      {open && (
-        <div className="md:hidden fixed inset-0 z-[999]">
-          {/* Overlay oscuro */}
-          <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={() => setOpen(false)}
-          />
-
-          {/* Panel */}
-          <div className="absolute top-0 right-0 w-3/4 max-w-xs h-full bg-background-dark text-white flex flex-col p-6">
-            {/* Header */}
-            <div className="flex justify-between items-center mb-10">
-              <span className="text-lg font-bold">Menú</span>
-              <button onClick={() => setOpen(false)} className="text-2xl">
-                ✕
-              </button>
-            </div>
-
-            {/* Links */}
-            <nav className="flex flex-col gap-6 text-lg font-bold uppercase">
-              {navItems.map((item) => (
-                <Link
-                  key={item.id}
-                  to={`/productos/${item.label}`}
-                  onClick={() => setOpen(false)}
-                  className="hover:text-primary transition"
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
-        </div>
-      )}
     </header>
+
+    {open && (
+  <div className="fixed inset-0 z-[999] md:hidden">
+    {/* Overlay */}
+    <div
+      className="absolute inset-0 bg-black/70"
+      onClick={() => setOpen(false)}
+    />
+
+    {/* Panel */}
+    <div className="absolute top-0 right-0 w-3/4 max-w-xs h-full bg-background-dark text-white flex flex-col p-6">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
+        <span className="text-lg font-bold">Menú</span>
+        <button onClick={() => setOpen(false)} className="text-2xl">
+          ✕
+        </button>
+      </div>
+
+      {/* Buscador */}
+      <div className="mb-6">
+        <input
+          type="text"
+          placeholder="Buscar..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="w-full px-4 py-2 rounded-lg bg-white/10 text-sm focus:outline-none"
+        />
+      </div>
+
+      {/* Links */}
+      <nav className="flex flex-col gap-6 text-lg font-bold uppercase flex-1">
+        {navItems.map((item) => (
+          <Link
+            key={item.id}
+            to={`/productos/${item.label}`}
+            onClick={() => setOpen(false)}
+            className="hover:text-primary transition"
+          >
+            {item.label}
+          </Link>
+        ))}
+      </nav>
+
+      {/* Redes */}
+      <div className="flex gap-4 mt-auto pt-6 border-t border-white/10">
+        {socials.map((s, i) => (
+          <button
+            key={i}
+            onClick={() => window.open(s.url, "_blank")}
+            className={`p-2 rounded-full bg-white/10 hover:bg-white/20 ${s.color}`}
+          >
+            <s.icon className="text-2xl" />
+          </button>
+        ))}
+      </div>
+    </div>
+  </div>
+)}
+
+</>
+
   );
 }
