@@ -58,7 +58,6 @@ export default function ShoppingCart() {
 
   const handlePagar = () => {
     navigate("/stripe", { state: { amount: getTotal() } });
-    alert("Sera redireccionado a la pasarela de pago.");
   };
 
   useEffect(() => {

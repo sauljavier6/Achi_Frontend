@@ -140,7 +140,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const getIva = () => state.items.reduce((acc:number, item: {Saleprice: number; Quantity: number; Iva: number}) => acc + (item.Saleprice * item.Quantity * item.Iva), 0);
 
   //
-  const getEnvio = () => 500; 
+  const getEnvio = () => 250; 
 
   // Total general (subtotal + IVA)
   const getTotal = () => getSubTotal() + getIva() + getEnvio();

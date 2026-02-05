@@ -20,12 +20,12 @@ import CartPage from "../pages/ecommercepages/cartpage/CartPage";
 import ProductDetails from "../pages/ecommercepages/productdetails/ProductDetails";
 import AuthPage from "../pages/authpage/AuthPage";
 import AuthLayout from "../components/layout/AuthLayout";
-import PaymentPage from "../pages/paymentpage/PaymentPage";
 import QuotesCart from "../components/ecommercecomponents/quotescart/QuotesCart";
 import WePage from "../pages/ecommercepages/wepage/WePage";
 import SalesWebPage from "../pages/saleswebpage/SalesWebPage";
 import FacturacionPage from "../pages/facturacionpage/FacturacionPage";
 import RoleRoute from "./RoleRoute";
+import PayPage from "../pages/ecommercepages/paypage/PayPage";
 
 const AppRoutes = () => {
   return (
@@ -41,7 +41,7 @@ const AppRoutes = () => {
         <Route path="productos/:id" element={<EProductsPage />} />
         <Route path="carrito" element={<CartPage />} />
         <Route path="detalles/:id" element={<ProductDetails />} />
-        <Route path="stripe" element={<PaymentPage />} />
+        <Route path="stripe" element={<PayPage />} />
         <Route path="cotizaciones" element={<QuotesCart />} />
         <Route path="nosotros" element={<WePage />} />
       </Route>
