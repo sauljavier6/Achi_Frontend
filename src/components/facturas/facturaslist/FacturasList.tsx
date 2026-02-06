@@ -148,7 +148,7 @@ const FacturasList = ({ searchTerm }: FacturasListProps) => {
         onClick={() => setPage((old) => old + 1)}
         className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50 flex items-center justify-center"
       >
-        <img src="/icons/flecha-negra.png" alt="Siguiente" className="w-4 h-4 rotate-180" />
+        <img src="/icons/flecha-negra.png" alt="Siguiente" className="w-4 h-4 transform rotate-180" />
       </button>
     </div>
     </>
