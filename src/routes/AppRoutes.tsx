@@ -26,6 +26,7 @@ import SalesWebPage from "../pages/saleswebpage/SalesWebPage";
 import FacturacionPage from "../pages/facturacionpage/FacturacionPage";
 import RoleRoute from "./RoleRoute";
 import PayPage from "../pages/ecommercepages/paypage/PayPage";
+import CategoryPage from "../pages/categorypage/CategoryPage";
 
 const AppRoutes = () => {
   return (
@@ -63,6 +64,7 @@ const AppRoutes = () => {
             <Route path="facturas" element={<FacturasPage />} />
             <Route path="facturacion" element={<FacturacionPage />} />
             <Route path="pedidos" element={<SalesWebPage />} />
+            <Route path="categorias" element={<CategoryPage />} />
           </Route>
         </Route>
       </Route>
