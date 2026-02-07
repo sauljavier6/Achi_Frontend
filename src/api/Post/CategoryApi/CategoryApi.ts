@@ -26,7 +26,7 @@ interface CategoryPayload {
 
 export const postCategory = async (data: CategoryPayload) => {
   const res = await fetch(
-    `${import.meta.env.VITE_API_URL}/ecommerce/categories`,
+    `${import.meta.env.VITE_API_URL}/category`,
     {
       method: 'POST',
       headers: {
