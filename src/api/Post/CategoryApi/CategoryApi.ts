@@ -16,3 +16,31 @@ export const getCategory = async () => {
 
   return await res.json();
 };
+
+
+
+interface CategoryPayload {
+  Description: string;
+  Genero: string;
+}
+
+export const postCategory = async (data: CategoryPayload) => {
+  const res = await fetch(
+    `${import.meta.env.VITE_API_URL}/ecommerce/categories`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    }
+  );
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Error al crear categoría');
+  }
+
+  return await res.json();
+};
