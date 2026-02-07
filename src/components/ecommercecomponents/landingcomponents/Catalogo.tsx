@@ -36,13 +36,27 @@ export default function Catalogo() {
   const [page] = useState(1);
   const [limit, setLimit] = useState(16);
   const [minPrice] = useState<number | null>(null);
-  const [maxPrice, setMaxPrice] = useState<number>(10000);
+
+  // UI vs API
+  const [maxPriceUI, setMaxPriceUI] = useState(10000);
+  const [maxPrice, setMaxPrice] = useState(10000);
+
   const [sortBy, setSortBy] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [priceOpen, setPriceOpen] = useState(true);
 
   const navigate = useNavigate();
 
-  const { data } = useQuery({
+  // Debounce
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setMaxPrice(maxPriceUI);
+    }, 400);
+
+    return () => clearTimeout(t);
+  }, [maxPriceUI]);
+
+  const { data, isFetching } = useQuery({
     queryKey: ["products", page, limit, minPrice, maxPrice, sortBy, id],
     queryFn: () =>
       getProductsCatalog({
@@ -110,39 +124,45 @@ export default function Catalogo() {
         </div>
       </div>
 
-      <div className="flex flex-col border-t border-gray-100 dark:border-white/5 pt-6">
-        <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-4">
-          Filtrar por
-        </h3>
-        <details className="group border-b border-gray-100 dark:border-white/5 py-4">
-          <summary className="flex cursor-pointer items-center justify-between text-sm font-bold">
-            Rango de Precio
-            <span className="material-symbols-outlined group-open:rotate-180 transition-transform">
-              expand_more
-            </span>
-          </summary>
+      <div className="border-b border-gray-100 dark:border-white/5 py-4">
+        <button
+          type="button"
+          onClick={() => setPriceOpen(!priceOpen)}
+          className="flex w-full items-center justify-between text-sm font-bold"
+        >
+          Rango de Precio
+          <span
+            className={`material-symbols-outlined transition-transform ${
+              priceOpen ? "rotate-180" : ""
+            }`}
+          >
+            expand_more
+          </span>
+        </button>
+
+        {priceOpen && (
           <div className="mt-4 flex flex-col gap-4">
             <input
               type="range"
               min={0}
               max={10000}
               step={500}
-              value={maxPrice}
-              onChange={(e) => setMaxPrice(Number(e.target.value))}
+              value={maxPriceUI}
+              onChange={(e) => setMaxPriceUI(Number(e.target.value))}
               className="w-full accent-primary h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer"
             />
             <div className="flex justify-between text-xs text-gray-500 font-medium">
               <span>$0</span>
-              <span>${maxPrice}</span>
+              <span>${maxPriceUI}</span>
             </div>
           </div>
-        </details>
+        )}
       </div>
     </>
   );
 
   return (
-    <main className="mx-auto flex w-full max-w-[1440px] flex-1 px-4 sm:px-6 md:px-10 lg:px-20 py-8 overflow-x-hidden">
+    <main className="mx-auto flex w-full max-w-[1440px] flex-1 px-4 sm:px-6 md:px-10 lg:px-20 py-8">
       {/* Sidebar desktop */}
       <aside className="hidden lg:flex w-64 flex-col gap-8 pr-8 border-r border-gray-100 dark:border-white/5 h-fit sticky top-24">
         <FiltersContent />
@@ -185,6 +205,11 @@ export default function Catalogo() {
             <p className="text-sm text-gray-500 mt-1">
               Explora nuestra última colección de {id}.
             </p>
+            {isFetching && (
+              <p className="text-xs text-gray-400 animate-pulse mt-2">
+                Filtrando productos...
+              </p>
+            )}
           </div>
 
           <div className="flex items-center gap-4">
@@ -236,7 +261,9 @@ export default function Catalogo() {
               </div>
 
               <div className="mt-4 flex flex-col gap-1 px-1">
-                <h3 className="text-base font-bold">{product.Description}</h3>
+                <h3 className="text-base font-bold">
+                  {product.Description}
+                </h3>
                 <p className="mt-1 text-sm font-bold text-primary">
                   ${product.Stock[0]?.Saleprice}
                 </p>
