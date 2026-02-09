@@ -169,43 +169,6 @@ export default function PayProducts() {
                   Método de Pago
                 </h2>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-                <button
-                  onClick={() => setPaymentMethod(6)}
-                  className={`flex flex-col items-center justify-center gap-3 p-4 border-2 rounded-xl transition-all
-                  ${
-                    paymentMethod === 6
-                      ? "bg-primary text-white border-primary"
-                      : "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:border-primary"
-                  }
-                `}
-                >
-                  <span className="material-symbols-outlined text-2xl">
-                    account_balance
-                  </span>
-                  <span className="text-[10px] font-black uppercase tracking-tighter">
-                    Transferencia
-                  </span>
-                </button>
-
-                <button
-                  onClick={() => setPaymentMethod(7)}
-                  className={`flex flex-col items-center justify-center gap-3 p-4 border-2 rounded-xl transition-all
-                  ${
-                    paymentMethod === 7
-                      ? "bg-primary text-white border-primary"
-                      : "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:border-primary"
-                  }
-                `}
-                >
-                  <span className="material-symbols-outlined text-2xl">
-                    payments
-                  </span>
-                  <span className="text-[10px] font-black uppercase tracking-tighter">
-                    Deposito
-                  </span>
-                </button>
-              </div>
 
               {/* MÉTODOS DE PAGO */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
