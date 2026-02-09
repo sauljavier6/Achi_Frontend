@@ -14,7 +14,7 @@ export default function PayProducts() {
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<7 | 6>(6);
-  console.log(loading)
+  console.log(loading);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -223,22 +223,25 @@ export default function PayProducts() {
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                           Banco
                         </p>
-                        <p className="font-bold">Banco Nacional Global</p>
+                        <p className="font-bold">BBVA Bancomer</p>
                       </div>
                       <div>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                           Titular
                         </p>
-                        <p className="font-bold">Cristian.</p>
+                        <p className="font-bold">
+                          Cristian Jair Salazar Macías
+                        </p>
                       </div>
                     </div>
+
                     <div className="space-y-4">
                       <div>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                          IBAN / CBU
+                          Número de tarjeta
                         </p>
                         <p className="font-bold font-mono tracking-tight">
-                          ES21 0000 1234 56 7890123456
+                          4152 3138 9371 4084
                         </p>
                       </div>
                       <div>
@@ -251,10 +254,12 @@ export default function PayProducts() {
                   </div>
                   <p className="mt-6 text-[11px] text-slate-500 leading-relaxed italic border-t border-slate-200 dark:border-slate-800 pt-4">
                     * El pedido se procesará una vez confirmado el recibo de la
-                    transferencia (aprox. 24-48hs hábiles).
+                    transferencia (aprox. 24–48 hrs hábiles).
                   </p>
-                  <p className="mt-6 text-[11px] text-slate-500 leading-relaxed italic border-t border-slate-200 dark:border-slate-800 pt-4">
-                    WhatsApp: 66433344444
+
+                  <p className="mt-2 text-[11px] text-slate-500 leading-relaxed italic">
+                    Es necesario enviar el comprobante de pago por WhatsApp al:
+                    <span className="font-bold"> 663 403 2690</span>
                   </p>
                 </div>
               )}
@@ -283,51 +288,33 @@ export default function PayProducts() {
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                           Titular
                         </p>
-                        <p className="font-bold">Cristian Shop S.A. de C.V.</p>
+                        <p className="font-bold">Cristian Jair Salazar Macías</p>
                       </div>
 
                       <div>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                          Número de Cuenta
+                          Número de tarjeta
                         </p>
                         <p className="font-bold font-mono tracking-tight">
-                          0123456789
+                          4152 3138 9371 4084
                         </p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                          CLABE
-                        </p>
-                        <p className="font-bold font-mono tracking-tight">
-                          012180001234567890
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                          Referencia
-                        </p>
-                        <p className="font-bold">PEDIDO #000</p>
                       </div>
                     </div>
                   </div>
 
                   <p className="mt-6 text-[11px] text-slate-500 leading-relaxed italic border-t border-slate-200 dark:border-slate-800 pt-4">
-                    * Acude a cualquier OXXO, 7-Eleven, Farmacia Guadalajara o
-                    tienda afiliada y solicita un depósito a la cuenta indicada.
-                    Conserva tu comprobante.
+                    * Realiza tu depósito o transferencia desde BBVA o en
+                    tiendas OXXO, 7-Eleven, Farmacia Guadalajara o tienda
+                    afiliada.
                   </p>
 
                   <p className="mt-4 text-[11px] text-slate-500 leading-relaxed italic">
-                    * Envíanos la foto del ticket por WhatsApp para liberar tu
+                    * Envía la foto del comprobante por WhatsApp para liberar tu
                     pedido más rápido.
                   </p>
 
                   <p className="mt-4 text-[11px] font-bold text-slate-600">
-                    WhatsApp: 664 333 4444
+                    WhatsApp: 663 403 2690
                   </p>
                 </div>
               )}
