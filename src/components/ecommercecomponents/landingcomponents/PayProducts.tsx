@@ -207,8 +207,48 @@ export default function PayProducts() {
                 </button>
               </div>
 
+              {/* MÉTODOS DE PAGO */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+                <button
+                  onClick={() => setPaymentMethod(6)}
+                  className={`flex flex-col items-center justify-center gap-3 p-4 border-2 rounded-xl transition-all
+      ${
+        paymentMethod === 6
+          ? "bg-white dark:bg-slate-900 border-primary shadow-lg"
+          : "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:border-primary"
+      }
+                `}
+                >
+                  <span className="material-symbols-outlined text-2xl">
+                    account_balance
+                  </span>
+                  <span className="text-[10px] font-black uppercase tracking-tighter">
+                    Transferencia
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => setPaymentMethod(7)}
+                  className={`flex flex-col items-center justify-center gap-3 p-4 border-2 rounded-xl transition-all
+                  ${
+                    paymentMethod === 7
+                      ? "bg-white dark:bg-slate-900 border-primary shadow-lg"
+                      : "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:border-primary"
+                  }
+                `}
+                >
+                  <span className="material-symbols-outlined text-2xl">
+                    payments
+                  </span>
+                  <span className="text-[10px] font-black uppercase tracking-tighter">
+                    Depósito
+                  </span>
+                </button>
+              </div>
+
+              {/* TRANSFERENCIA */}
               {paymentMethod === 6 && (
-                <div className="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-xl border border-slate-100 dark:border-slate-800">
+                <div className="bg-white dark:bg-slate-900/60 p-6 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm">
                   <div className="flex items-center gap-3 mb-4">
                     <span className="material-symbols-outlined text-primary">
                       info
@@ -217,6 +257,7 @@ export default function PayProducts() {
                       Detalles de Transferencia Bancaria
                     </h3>
                   </div>
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
                     <div className="space-y-4">
                       <div>
@@ -225,6 +266,7 @@ export default function PayProducts() {
                         </p>
                         <p className="font-bold">BBVA Bancomer</p>
                       </div>
+
                       <div>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                           Titular
@@ -244,34 +286,37 @@ export default function PayProducts() {
                           4152 3138 9371 4084
                         </p>
                       </div>
+
                       <div>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                           Concepto
                         </p>
-                        <p className="font-bold">PEDIDO #000 (Indispensable)</p>
+                        <p className="font-bold">PEDIDO #000</p>
                       </div>
                     </div>
                   </div>
-                  <p className="mt-6 text-[11px] text-slate-500 leading-relaxed italic border-t border-slate-200 dark:border-slate-800 pt-4">
+
+                  <p className="mt-6 text-[11px] text-slate-500 italic border-t border-slate-200 dark:border-slate-800 pt-4">
                     * El pedido se procesará una vez confirmado el recibo de la
                     transferencia (aprox. 24–48 hrs hábiles).
                   </p>
 
-                  <p className="mt-2 text-[11px] text-slate-500 leading-relaxed italic">
-                    Es necesario enviar el comprobante de pago por WhatsApp al:
+                  <p className="mt-2 text-[11px] text-slate-500 italic">
+                    Envía el comprobante por WhatsApp al:
                     <span className="font-bold"> 663 403 2690</span>
                   </p>
                 </div>
               )}
 
+              {/* DEPÓSITO */}
               {paymentMethod === 7 && (
-                <div className="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-xl border border-slate-100 dark:border-slate-800">
+                <div className="bg-white dark:bg-slate-900/60 p-6 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm">
                   <div className="flex items-center gap-3 mb-4">
                     <span className="material-symbols-outlined text-primary">
                       storefront
                     </span>
                     <h3 className="text-sm font-black uppercase">
-                      Depósito en OXXO / 7-Eleven / Farmacias
+                      Depósito en tiendas
                     </h3>
                   </div>
 
@@ -288,7 +333,9 @@ export default function PayProducts() {
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                           Titular
                         </p>
-                        <p className="font-bold">Cristian Jair Salazar Macías</p>
+                        <p className="font-bold">
+                          Cristian Jair Salazar Macías
+                        </p>
                       </div>
 
                       <div>
@@ -302,15 +349,14 @@ export default function PayProducts() {
                     </div>
                   </div>
 
-                  <p className="mt-6 text-[11px] text-slate-500 leading-relaxed italic border-t border-slate-200 dark:border-slate-800 pt-4">
-                    * Realiza tu depósito o transferencia desde BBVA o en
-                    tiendas OXXO, 7-Eleven, Farmacia Guadalajara o tienda
-                    afiliada.
+                  <p className="mt-6 text-[11px] text-slate-500 italic border-t border-slate-200 dark:border-slate-800 pt-4">
+                    * Puedes depositar en OXXO, 7-Eleven, Farmacia Guadalajara o
+                    tienda afiliada.
                   </p>
 
-                  <p className="mt-4 text-[11px] text-slate-500 leading-relaxed italic">
-                    * Envía la foto del comprobante por WhatsApp para liberar tu
-                    pedido más rápido.
+                  <p className="mt-4 text-[11px] text-slate-500 italic">
+                    Envía la foto del comprobante por WhatsApp para liberar tu
+                    pedido.
                   </p>
 
                   <p className="mt-4 text-[11px] font-bold text-slate-600">
