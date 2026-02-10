@@ -101,6 +101,8 @@ const SalesDetailComponent = ({ sale }: Props) => {
     enabled: sale !== null,
   });
 
+  console.log(data)
+
   const handlePrintRemision = () => {
     printRemision(sale!);
   };
@@ -165,6 +167,11 @@ const SalesDetailComponent = ({ sale }: Props) => {
             {data?.StateWeb ? "Pendiente" : "Completada"}
           </p>
         </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm mt-2">
+          <p>
+            <span className="font-semibold">Direccion:</span> {data?.Address.Description}
+          </p>
+        </div>
       </section>
 
       {/* Productos */}
@@ -197,7 +204,7 @@ const SalesDetailComponent = ({ sale }: Props) => {
                   <td className="px-3 py-2 text-right font-semibold">
                     $
                     {(item.Quantity * parseFloat(item.Stock.Saleprice)).toFixed(
-                      2
+                      2,
                     )}
                   </td>
                 </tr>

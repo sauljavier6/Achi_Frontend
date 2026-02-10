@@ -74,7 +74,10 @@ export default function PayProducts() {
         progressClassName: "custom-progress",
       });
       clearCart();
-      window.location.href = "/";
+      setName("");
+      setEmail("");
+      setPhone("");
+      setAddress("");
     } catch (err) {
       console.error(err);
       toast.error("❌ Error al procesar", {
@@ -398,7 +401,7 @@ export default function PayProducts() {
                     Envío Estándar
                   </span>
                   <span className="font-bold text-green-600">
-                    ${getEnvio().toFixed(2)}
+                    ${getSubTotal() === 0 ? "0.00" : getEnvio().toFixed(2)}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
@@ -411,7 +414,7 @@ export default function PayProducts() {
                   Total
                 </span>
                 <span className="text-3xl font-black tracking-tighter">
-                  ${getTotal().toFixed(2)}
+                  ${getSubTotal() === 0 ? "0.00" : getTotal().toFixed(2)}
                 </span>
               </div>
               <button
