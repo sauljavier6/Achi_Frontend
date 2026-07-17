@@ -1,5 +1,4 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import AdminLayout from "../components/layout/poslayout/AdminLayout";
 
 import DashboardPage from "../pages/Dashboard";
 import ProductsPage from "../pages/productpage/ProductsPage";
@@ -13,20 +12,22 @@ import ComprasPage from "../pages/compraspage/ComprasPage";
 import SuppliersPage from "../pages/supplierspage/SuppliersPage";
 import FacturasPage from "../pages/facturaspage/FacturasPage";
 import HomePage from "../pages/ecommercepages/homepage/Homepage";
-import EcommerceLayout from "../components/layout/ecommercelayout/EcommerceLayout";
+import EcommerceLayout from "../layouts/EcommerceLayout";
 
 import EProductsPage from "../pages/ecommercepages/productpage/ProductPage";
 import CartPage from "../pages/ecommercepages/cartpage/CartPage";
 import ProductDetails from "../pages/ecommercepages/productdetails/ProductDetails";
 import AuthPage from "../pages/authpage/AuthPage";
-import AuthLayout from "../components/layout/AuthLayout";
+import AuthLayout from "../layouts/AuthLayout";
 import QuotesCart from "../components/ecommercecomponents/quotescart/QuotesCart";
 import WePage from "../pages/ecommercepages/wepage/WePage";
 import SalesWebPage from "../pages/saleswebpage/SalesWebPage";
 import FacturacionPage from "../pages/facturacionpage/FacturacionPage";
 import RoleRoute from "./RoleRoute";
-import PayPage from "../pages/ecommercepages/paypage/PayPage";
 import CategoryPage from "../pages/categorypage/CategoryPage";
+import AdminLayout from "../layouts/AdminLayout";
+import PaymentPage from "../pages/paymentpage/PaymentPage";
+import SubCategoryPage from "../pages/subcategorypage/SubCategoryPage";
 
 const AppRoutes = () => {
   return (
@@ -42,7 +43,7 @@ const AppRoutes = () => {
         <Route path="productos/:id" element={<EProductsPage />} />
         <Route path="carrito" element={<CartPage />} />
         <Route path="detalles/:id" element={<ProductDetails />} />
-        <Route path="stripe" element={<PayPage />} />
+        <Route path="stripe" element={<PaymentPage />} />
         <Route path="cotizaciones" element={<QuotesCart />} />
         <Route path="nosotros" element={<WePage />} />
       </Route>
@@ -65,6 +66,7 @@ const AppRoutes = () => {
             <Route path="facturacion" element={<FacturacionPage />} />
             <Route path="pedidos" element={<SalesWebPage />} />
             <Route path="categorias" element={<CategoryPage />} />
+            <Route path="subcategorias" element={<SubCategoryPage />} />
           </Route>
         </Route>
       </Route>

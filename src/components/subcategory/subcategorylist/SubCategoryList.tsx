@@ -1,28 +1,28 @@
 import { useEffect, useState } from "react";
 import { useQuery } from '@tanstack/react-query';
-import { getCategoryList } from "../../../api/Post/CategoryApi/CategoryApi";
+import { getSubCategoryList } from "../../../api/Post/SubCategoryApi/SubCategoryApi";
 
-export interface CategoryProps {
-  ID_Category: number;
+export interface SubCategoryProps {
+  ID_SubCategory: number;
   Description: string;
   Genero: string;
 }
 
-interface CategoryListProps {
+interface SubCategoryListProps {
   onDelete: (ids: number[]) => void;
   resetChecks: boolean;
   onResetComplete: () => void;
   searchTerm: string;
 }
 
-const CategoryList = ({onDelete, resetChecks, onResetComplete, searchTerm}: CategoryListProps ) => {
+const SubCategoryList = ({onDelete, resetChecks, onResetComplete, searchTerm}: SubCategoryListProps ) => {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [page, setPage] = useState(1);
   const limit = 10;
 
   const { data } = useQuery({
-    queryKey: ['category', page, limit, searchTerm],
-    queryFn: () => getCategoryList({ page, limit, searchTerm }),
+    queryKey: ['subcategory', page, limit, searchTerm],
+    queryFn: () => getSubCategoryList({ page, limit, searchTerm }),
     placeholderData: (prev) => prev,
   });
   
@@ -52,7 +52,7 @@ const CategoryList = ({onDelete, resetChecks, onResetComplete, searchTerm}: Cate
     if (selectedIds.length === data.data.length) {
       setSelectedIds([]);
     } else {
-      const allIds = data.data.map((prod: CategoryProps) => prod.ID_Category);
+      const allIds = data.data.map((prod: SubCategoryProps) => prod.ID_SubCategory);
       setSelectedIds(allIds);
     }
   };
@@ -77,14 +77,14 @@ const CategoryList = ({onDelete, resetChecks, onResetComplete, searchTerm}: Cate
         </thead>
         <tbody>
 
-            {data?.data?.map((prod: CategoryProps) => (
-              <tr key={prod.ID_Category} className="border-t">
+            {data?.data?.map((prod: SubCategoryProps) => (
+              <tr key={prod.ID_SubCategory} className="border-t">
                 <td className="px-2 py-2">
-                  <input type="checkbox" checked={selectedIds.includes(prod.ID_Category)}
-                  onChange={() => handleCheckboxChange(prod.ID_Category)}
+                  <input type="checkbox" checked={selectedIds.includes(prod.ID_SubCategory)}
+                  onChange={() => handleCheckboxChange(prod.ID_SubCategory)}
                   onClick={(e) => e.stopPropagation()}/>
                 </td>
-                <td className="px-2 py-2">{prod.ID_Category}</td>
+                <td className="px-2 py-2">{prod.ID_SubCategory}</td>
                 <td className="px-2 py-2">{prod.Description}</td>
                 <td className="px-2 py-2">{prod.Genero}</td>
               </tr>
@@ -143,4 +143,4 @@ const CategoryList = ({onDelete, resetChecks, onResetComplete, searchTerm}: Cate
   );
 };
 
-export default CategoryList;
+export default SubCategoryList;

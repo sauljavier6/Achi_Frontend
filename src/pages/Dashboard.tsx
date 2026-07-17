@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 const DashboardPage = () => {
   const navigate = useNavigate();
   return (
-    <div className="sm:p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div className="sm:p-6 bg-gray-50 dark:bg-gray-900 min-h-screen rounded-lg">
       <h1 className="text-3xl font-bold mb-6 text-gray-800 dark:text-gray-200">Dashboard POS</h1>
 
       {/* Tarjetas rápidas */}

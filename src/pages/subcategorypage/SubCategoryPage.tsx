@@ -1,12 +1,12 @@
 
 import { useState } from "react";
-import styles from "./CategoryPage.module.scss";
+import styles from "./SubCategoryPage.module.scss";
 import { useMutation, useQueryClient  } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
 import { useAuth } from "../../hooks/useAuth";
-import ModalCategory from "../../components/category/modalcategory/ModalCategory";
-import CategoryList from "../../components/category/categorylist/CategoryList";
 import { deleteMultipleCategorys } from "../../api/Post/CategoryApi/CategoryApi";
+import ModalSubCategory from "../../components/subcategory/modalsubcategory/ModalSubCategory";
+import SubCategoryList from "../../components/subcategory/subcategorylist/SubCategoryList";
 
 const CategoryPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -66,12 +66,12 @@ const CategoryPage = () => {
   return (
     <div className="p-4 bg-gray-50 rounded-lg">
       <div className="flex flex-col lg:flex-row md:items-center md:justify-between mb-4 gap-2">
-        <h1 className={styles.title}>Categorias</h1>
+        <h1 className={styles.title}>SubCategorias</h1>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
           <input
             type="text"
-            placeholder="Buscar categoria..."
+            placeholder="Buscar Subcategoria..."
             value={searchTerm}
             onChange={handleSearchChange}
             className="px-3 py-2 border border-gray-300 rounded-md w-full"
@@ -113,12 +113,12 @@ const CategoryPage = () => {
         </div>
       </div>
 
-      <CategoryList onDelete={(id) => setSelectedIds(id)} resetChecks={resetChecks}
+      <SubCategoryList onDelete={(id) => setSelectedIds(id)} resetChecks={resetChecks}
       onResetComplete={() => setResetChecks(false)} searchTerm={searchTerm}/>
 
       {modalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <ModalCategory onClose={handleClose} onEdit={CategoryToEdit}/>
+            <ModalSubCategory onClose={handleClose} onEdit={CategoryToEdit}/>
         </div>
       )}
     </div>

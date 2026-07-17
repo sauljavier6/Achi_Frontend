@@ -1,0 +1,144 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #f9f9fc;
+  --color-primary: #b60059;
+  --color-primary-container: #e30071;
+  --color-secondary: #0b677a;
+  --color-secondary-container: #9fe8fe;
+  --color-tertiary: #316738;
+
+  --color-surface: #f9f9fc;
+  --color-surface-container-low: #f3f3f6;
+  --color-on-surface: #1a1c1e;
+  --color-on-surface-variant: #5b3f46;
+  --color-on-background: #1a1c1e;
+
+  --color-on-primary: #ffffff;
+  --color-on-primary-container: #fffbff;
+  --color-primary-fixed: #ffd9e1;
+  --color-primary-fixed-dim: #ffb1c4;
+  --color-on-primary-fixed: #3f001a;
+  --color-on-primary-fixed-variant: #8f0044;
+
+  --color-on-secondary: #ffffff;
+  --color-on-tertiary: #ffffff;
+
+  --color-error: #ba1a1a;
+  --color-outline: #8f6e76;
+
+  --font-sans: "Plus Jakarta Sans", sans-serif;
+  --font-body-md: "Plus Jakarta Sans", sans-serif;
+  --font-body-lg: "Plus Jakarta Sans", sans-serif;
+  --font-label-lg: "Plus Jakarta Sans", sans-serif;
+  --font-display-lg: "Plus Jakarta Sans", sans-serif;
+  --font-headline-md: "Plus Jakarta Sans", sans-serif;
+
+  --text-label-lg: 14px;
+  --text-label-lg--line-height: 20px;
+  --text-label-lg--font-weight: 600;
+
+  --text-body-md: 16px;
+  --text-body-md--line-height: 24px;
+
+  --text-body-lg: 18px;
+  --text-body-lg--line-height: 28px;
+  --text-body-lg--font-weight: 500;
+
+  --text-display-lg: 48px;
+  --text-display-lg--line-height: 56px;
+  --text-display-lg--font-weight: 800;
+  --text-display-lg--letter-spacing: -0.02em;
+
+  --text-headline-md: 24px;
+  --text-headline-md--line-height: 32px;
+  --text-headline-md--font-weight: 700;
+
+  --text-price-display: 24px;
+  --text-price-display--line-height: 1.2;
+  --text-price-display--font-weight: 700;
+
+  --spacing-gutter: 24px;
+  --spacing-margin-desktop: 64px;
+  --spacing-margin-mobile: 16px;
+  --spacing-container-max: 1280px;
+
+  --container-container-max: 1280px;
+}
+
+
+@layer base {
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply m-0 bg-background text-on-surface font-sans;
+  }
+
+  .material-symbols-outlined {
+    font-family: "Material Symbols Outlined";
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    display: inline-block;
+    text-transform: none;
+    letter-spacing: normal;
+    white-space: nowrap;
+    direction: ltr;
+    font-feature-settings: "liga";
+    -webkit-font-feature-settings: "liga";
+    font-variation-settings:
+      "FILL" 1,
+      "wght" 400,
+      "GRAD" 0,
+      "opsz" 24;
+  }
+}
+
+@layer components {
+  .page-container {
+    @apply mx-auto w-full px-4 md:px-8 xl:px-16;
+    max-width: var(--container-max);
+  }
+
+  .section-spacing {
+    @apply py-8 md:py-12;
+  }
+
+  .card {
+    @apply rounded-3xl bg-surface shadow-sm;
+  }
+
+  .btn-primary {
+    @apply rounded-full bg-primary px-6 py-3 font-semibold text-white transition hover:opacity-90;
+  }
+
+  .btn-secondary {
+    @apply rounded-full border border-primary bg-white px-6 py-3 font-semibold text-primary transition hover:bg-primary hover:text-white;
+  }
+
+  .glass-effect {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  .hero-card {
+    @apply overflow-hidden rounded-[32px] bg-surface shadow-sm;
+  }
+
+  .navbar {
+    @apply sticky top-0 z-50 bg-primary text-white;
+  }
+
+  .input-search {
+    @apply rounded-full border border-white/30 bg-white/10 px-5 py-3 text-white outline-none placeholder:text-white/70;
+  }
+}

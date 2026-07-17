@@ -30,17 +30,11 @@ export const getProductsBestProduct = async ({ page = 1, limit = 10 }) => {
   return await res.json();
 };
 
-export const getProductsCatalog = async ({
-  page = 1,
-  limit = 10,
-  category,
-  minPrice,
-  maxPrice,
-  sortBy,
-}: {
+export const getProductsCatalog = async ({page = 1, limit = 10, category, subcategory, sortBy,}: {
   page?: number;
   limit?: number;
-  category?: string | null;
+  category?: number | null;
+  subcategory?: number | null;
   minPrice?: number | null;
   maxPrice?: number | null;
   sortBy?: string | null;
@@ -51,8 +45,7 @@ export const getProductsCatalog = async ({
   });
 
   if (category) params.append("category", String(category));
-  if (minPrice) params.append("minPrice", String(minPrice));
-  if (maxPrice) params.append("maxPrice", String(maxPrice));
+  if (subcategory) params.append("subcategory", String(subcategory));
   if (sortBy) params.append("sortBy", sortBy);
 
   const res = await fetch(
@@ -86,9 +79,9 @@ export const getProductById = async (id: number) => {
   return await res.json();
 };
 
-export const getProductByGender = async (gender: string) => {
+export const getProductByGender = async (category: string, productId: number) => {
   const res = await fetch(
-    `${import.meta.env.VITE_API_URL}/ecommerce/products/productsbygender/${gender}`,
+    `${import.meta.env.VITE_API_URL}/ecommerce/products/productsbycategory/${category}/${productId}`,
     {
       headers: {
         Authorization: `Bearer ${token}`,

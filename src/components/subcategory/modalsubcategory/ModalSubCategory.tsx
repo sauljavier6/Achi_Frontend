@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 import {
-  postCategory,
-  getCategoryById,
-  updateCategory,
-} from "../../../api/Post/CategoryApi/CategoryApi";
+  postSubCategory,
+  getSubCategoryById,
+  updateSubCategory,
+} from "../../../api/Post/SubCategoryApi/SubCategoryApi";
 
 interface Props {
   onClose: () => void;
@@ -13,40 +13,40 @@ interface Props {
   onEdit?: number | null;
 }
 
-export default function ModalCategory({ onClose, onCreated, onEdit }: Props) {
+export default function ModalSubCategory({ onClose, onCreated, onEdit }: Props) {
   const [description, setDescription] = useState("");
-  const [genero, setGenero] = useState("");
+  const [state, setState ] = useState("");
 
   const queryClient = useQueryClient();
 
   const { data } = useQuery({
-    queryKey: ["category", onEdit],
-    queryFn: () => getCategoryById(onEdit!),
+    queryKey: ["subcategory", onEdit],
+    queryFn: () => getSubCategoryById(onEdit!),
     enabled: !!onEdit,
   });
 
   useEffect(() => {
     if (data?.data) {
       setDescription(data.data.Description);
-      setGenero(data.data.Genero);
+      setState(data.data.State);
     }
   }, [data]);
 
   const mutation = useMutation({
     mutationFn: onEdit
       ? (payload: any) =>
-          updateCategory({ id: onEdit, data: payload })
-      : postCategory,
+          updateSubCategory({ id: onEdit, data: payload })
+      : postSubCategory,
 
     onSuccess: (data) => {
-      toast.success(onEdit ? "Categoría actualizada" : "Categoría creada");
-      queryClient.invalidateQueries({ queryKey: ["category"] });
-      onCreated?.(data.ID_Category);
+      toast.success(onEdit ? "Subcategoría actualizada" : "Subcategoría creada");
+      queryClient.invalidateQueries({ queryKey: ["subcategory"] });
+      onCreated?.(data.ID_SubCategory);
       onClose();
     },
     onError: () =>
       toast.error(
-        onEdit ? "Error al actualizar" : "Error al crear categoría"
+        onEdit ? "Error al actualizar" : "Error al crear subcategoría"
       ),
   });
 
@@ -56,7 +56,7 @@ export default function ModalCategory({ onClose, onCreated, onEdit }: Props) {
 
     mutation.mutate({
       Description: description,
-      Genero: genero,
+      State: state,
     });
   };
 
@@ -64,7 +64,7 @@ export default function ModalCategory({ onClose, onCreated, onEdit }: Props) {
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl p-6 w-full max-w-sm">
         <h2 className="text-lg font-bold mb-4">
-          {onEdit ? "Editar categoría" : "Nueva categoría"}
+          {onEdit ? "Editar subcategoría" : "Nueva subcategoría"}
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -76,8 +76,8 @@ export default function ModalCategory({ onClose, onCreated, onEdit }: Props) {
           />
 
           <select
-            value={genero}
-            onChange={(e) => setGenero(e.target.value)}
+            value={state}
+            onChange={(e) => setState(e.target.value)}
             className="w-full border px-3 py-2 rounded"
           >
             <option value="" disabled>

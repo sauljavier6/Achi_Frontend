@@ -16,32 +16,39 @@ interface ProductInput {
   ID_Product?: number;
   Description: string;
   ID_Category: number;
+  ID_SubCategory: number;
   Code: string;
   Codesat: string;
   State?: boolean;
   ID_Iva: number;
   StockData: StockInput[];
-  Imagenes: ProductImage[]; 
+  Imagenes: ProductImage[];
 }
 
-const token = localStorage.getItem('token')
+const token = localStorage.getItem("token");
 
-export const getProducts = async ({ page = 1, limit = 10, searchTerm='' }) => {
-  const res = await fetch(`${import.meta.env.VITE_API_URL}/product?page=${page}&limit=${limit}&searchTerm=${searchTerm}`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+export const getProducts = async ({
+  page = 1,
+  limit = 10,
+  searchTerm = "",
+}) => {
+  const res = await fetch(
+    `${import.meta.env.VITE_API_URL}/product?page=${page}&limit=${limit}&searchTerm=${searchTerm}`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
     },
-  });
+  );
 
-  if (!res.ok) throw new Error('Error al obtener productos');
+  if (!res.ok) throw new Error("Error al obtener productos");
   return await res.json(); // Retorna: { data, pagination, message }
 };
 
-
 export const postProduct = async (productData: ProductInput) => {
-  console.log('productData',productData)
+  console.log("productData", productData);
   const formData = new FormData();
 
   // datos normales
@@ -49,66 +56,65 @@ export const postProduct = async (productData: ProductInput) => {
   formData.append("Codesat", productData.Codesat);
   formData.append("Description", productData.Description);
   formData.append("ID_Category", productData.ID_Category.toString());
+  formData.append("ID_SubCategory", productData.ID_SubCategory.toString());
   formData.append("StockData", JSON.stringify(productData.StockData));
   formData.append("ID_Iva", JSON.stringify(productData.ID_Iva));
 
   // imágenes
-  productData.Imagenes.forEach((imgObj: ProductImage ) => {
+  productData.Imagenes.forEach((imgObj: ProductImage) => {
     formData.append("Imagenes", imgObj.file);
   });
 
   const res = await fetch(`${import.meta.env.VITE_API_URL}/product`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Authorization': `Bearer ${token}`
+      Authorization: `Bearer ${token}`,
     },
     body: formData,
   });
 
   if (!res.ok) {
     const error = await res.json();
-    throw new Error(error.message || 'Error al crear producto');
+    throw new Error(error.message || "Error al crear producto");
   }
 
   return await res.json();
 };
 
-
 export const deleteMultipleProducts = async (ids: number[]) => {
   const res = await fetch(`${import.meta.env.VITE_API_URL}/product`, {
-    method: 'DELETE',
+    method: "DELETE",
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({ ids }),
   });
 
   if (!res.ok) {
     const error = await res.json();
-    throw new Error(error.message || 'Error al eliminar productos');
+    throw new Error(error.message || "Error al eliminar productos");
   }
 
   return await res.json();
 };
 
-
 export const getProductById = async (id: number) => {
   const res = await fetch(`${import.meta.env.VITE_API_URL}/product/${id}`, {
     headers: {
-      'Authorization': `Bearer ${token}`
+      Authorization: `Bearer ${token}`,
     },
   });
 
   if (!res.ok) {
-    throw new Error('No se pudo obtener el producto');
+    throw new Error("No se pudo obtener el producto");
   }
 
   return await res.json();
 };
 
 export const updateProduct = async (productData: ProductInput) => {
-  console.log('productData',productData)
+  console.log("productData", productData);
   const formData = new FormData();
 
   // datos normales
@@ -119,6 +125,7 @@ export const updateProduct = async (productData: ProductInput) => {
   formData.append("Codesat", productData.Codesat);
   formData.append("Description", productData.Description);
   formData.append("ID_Category", productData.ID_Category.toString());
+  formData.append("ID_SubCategory", productData.ID_SubCategory.toString());
   formData.append("StockData", JSON.stringify(productData.StockData));
   formData.append("ID_Iva", JSON.stringify(productData.ID_Iva));
   formData.append("State", productData.State ? "true" : "false");
@@ -131,36 +138,35 @@ export const updateProduct = async (productData: ProductInput) => {
   });
 
   // imágenes existentes a conservar (las que ya estaban en el producto)
-  productData.Imagenes
-    .filter((img: ProductImage) => typeof img === "string") // solo nombres de imagen existentes
+  productData.Imagenes.filter((img: ProductImage) => typeof img === "string") // solo nombres de imagen existentes
     .forEach((imgName: string) => formData.append("ExistingImages[]", imgName));
 
-  
   const res = await fetch(`${import.meta.env.VITE_API_URL}/product`, {
-    method: 'PUT',
+    method: "PUT",
     headers: {
-      'Authorization': `Bearer ${token}`
+      Authorization: `Bearer ${token}`,
     },
     body: formData,
   });
 
   if (!res.ok) {
     const error = await res.json();
-    throw new Error(error.message || 'Error al actualizar producto');
+    throw new Error(error.message || "Error al actualizar producto");
   }
 
   return await res.json();
 };
 
-
 export const searchProducts = async (query: string) => {
-  const res = await fetch(`${import.meta.env.VITE_API_URL}/product/search?q=${query}`, {
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
-  });
+  const res = await fetch(
+    `${import.meta.env.VITE_API_URL}/product/search?q=${query}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
 
-  if (!res.ok) throw new Error('Error al buscar productos');
+  if (!res.ok) throw new Error("Error al buscar productos");
   return await res.json();
 };
-

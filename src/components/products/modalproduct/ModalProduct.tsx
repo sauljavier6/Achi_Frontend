@@ -10,6 +10,7 @@ import {
 import { getCategory } from "../../../api/Post/CategoryApi/CategoryApi";
 import { getIvaDatos } from "../../../api/Post/ivaApi/IvaApi";
 import ModalCategory from "../../category/modalcategory/ModalCategory";
+import { getSubCategory } from "../../../api/Post/SubCategoryApi/SubCategoryApi";
 
 interface ModalProductProps {
   onClose: () => void;
@@ -21,6 +22,7 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
   const [products, setProducts] = useState({
     Description: "",
     ID_Category: 0,
+    ID_SubCategory: 0,
     Code: "",
     Codesat: "",
     StockData: [
@@ -35,6 +37,8 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
     ID_Iva: 0,
   });
 
+  console.log("products", products);
+
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -45,6 +49,7 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
           setProducts({
             Description: data.Description,
             ID_Category: data.ID_Category,
+            ID_SubCategory: data.ID_SubCategory,
             Code: data.Code,
             Codesat: data.Codesat,
             StockData: data.Stock || [],
@@ -63,6 +68,11 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
   const { data: categoryData } = useQuery({
     queryKey: ["category"],
     queryFn: getCategory,
+  });
+
+  const { data: subcategoryData } = useQuery({
+    queryKey: ["subcategory"],
+    queryFn: getSubCategory,
   });
 
   const { data: ivaData } = useQuery({
@@ -143,6 +153,7 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
     setProducts({
       Description: "",
       ID_Category: 0,
+      ID_SubCategory: 0,
       Code: "",
       Codesat: "",
       StockData: [
@@ -265,15 +276,30 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
                     {cat.Description}
                   </option>
                 ))}
-                <option
-                  disabled
-                  className="bg-gray-100 text-gray-500 text-sm font-medium"
-                >
-                  ---------------------------
-                </option>
-                <option value={-1} className="text-blue-600 font-semibold">
-                  ➕ Crear nueva categoría
-                </option>
+                <option disabled>---------------------------</option>
+                <option value={-1}>➕ Crear nueva categoría</option>
+              </select>
+
+              <select
+                id="ID_SubCategory"
+                name="ID_SubCategory"
+                value={products.ID_SubCategory}
+                onChange={(e) =>
+                  setProducts({
+                    ...products,
+                    ID_SubCategory: Number(e.target.value),
+                  })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
+              >
+                <option value="">Selecciona subcategoría</option>
+                {subcategoryData?.data?.map((cat: any) => (
+                  <option key={cat.ID_SubCategory} value={cat.ID_SubCategory}>
+                    {cat.Description}
+                  </option>
+                ))}
+                <option disabled>---------------------------</option>
+                <option value={-1}>➕ Crear nueva subcategoría</option>
               </select>
 
               <input
@@ -292,28 +318,18 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
                 id="Iva"
                 name="ID_Iva"
                 value={products.ID_Iva}
-                onChange={(e) => {
-                  setProducts({ ...products, ID_Iva: Number(e.target.value) });
-                }}
+                onChange={(e) =>
+                  setProducts({ ...products, ID_Iva: Number(e.target.value) })
+                }
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
               >
                 <option value="">Selecciona IVA</option>
-                {ivaData?.data?.map((cat: any) => (
-                  <option key={cat.ID_Iva} value={cat.ID_Iva}>
-                    {cat.Description}
+                {ivaData?.data?.map((iva: any) => (
+                  <option key={iva.ID_Iva} value={iva.ID_Iva}>
+                    {iva.Description}
                   </option>
                 ))}
               </select>
-
-              {/* Input de imágenes */}
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleImageChange}
-                accept="image/*"
-                multiple
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
-              />
 
               <input
                 type="text"
@@ -324,6 +340,15 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
                   setProducts({ ...products, Codesat: e.target.value })
                 }
                 placeholder="Código SAT"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
+              />
+
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImageChange}
+                accept="image/*"
+                multiple
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
               />
             </div>

@@ -1,7 +1,7 @@
 
-import Footer from "../../ecommercecomponents/landingcomponents/Footer";
+import Footer from "../components/ecommercecomponents/landingcomponents/Footer";
 import { Outlet } from "react-router-dom";
-import Header from "../../ecommercecomponents/landingcomponents/Header";
+import Header from "../components/ecommercecomponents/landingcomponents/Header";
 
 export default function EcommerceLayout() {
   return (

@@ -1,3 +1,6 @@
+import { useNavigate } from "react-router-dom";
+import { FaHeart, FaShoppingCart } from "react-icons/fa";
+
 interface Category {
   ID_Category: number;
   Description: string;
@@ -26,34 +29,77 @@ interface ProductProps {
 }
 
 export default function ProductCard({
+  ID_Product,
   Description,
   Category,
   Stock,
   ImagenProduct,
 }: ProductProps) {
+  const navigate = useNavigate();
+
   const title = Description;
-  const image = ImagenProduct[0]?.Imagen;
-  const price = Stock[0]?.Saleprice;
-  const category = Category?.Description;
+  const image = ImagenProduct?.[0]?.Imagen;
+  const price = Stock?.[0]?.Saleprice ?? 0;
+  const category = Category?.Description ?? "Producto";
+
+  const goToDetails = () => {
+    navigate(`/detalles/${ID_Product}`);
+  };
 
   return (
-    <div className="min-w-[320px] lg:min-w-[400px] flex-none group snap-start">
-      <div className="relative h-56 w-full overflow-hidden rounded-xl bg-gray-100 dark:bg-white/5 flex items-center justify-center">
-        <div
-          className="absolute inset-0 bg-no-repeat bg-center bg-contain"
-          style={{
-            backgroundImage: `url("${import.meta.env.VITE_API_URL_IMAGES}${image}")`,
-          }}
+    <article
+      onClick={goToDetails}
+      className="group relative cursor-pointer overflow-hidden rounded-[32px] bg-white shadow-[0_10px_30px_rgba(182,0,89,0.10)] transition-transform hover:-translate-y-1"
+    >
+      <div className="relative aspect-[5/4] overflow-hidden bg-primary-container">
+        <img
+          src={
+            image
+              ? `${import.meta.env.VITE_API_URL_IMAGES}${image}`
+              : "/no-image.png"
+          }
+          alt={title}
+          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
+
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            // aquí luego puedes agregar a favoritos
+          }}
+          className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-primary backdrop-blur-md transition-colors hover:bg-primary hover:text-white"
+        >
+          <FaHeart size={17} />
+        </button>
       </div>
 
-      <div className="mt-4 flex justify-between items-start">
-        <div>
-          <h3 className="font-bold text-lg">{title}</h3>
-          <p className="text-[#9a4c52] text-sm">{category}</p>
+      <div className="p-5 md:p-6">
+        <span className="mb-3 inline-block rounded-full bg-secondary-container/40 px-3 py-1 text-xs font-bold text-secondary">
+          {category}
+        </span>
+
+        <h3 className="line-clamp-2 min-h-[56px] text-xl font-bold leading-tight text-on-surface">
+          {title}
+        </h3>
+
+        <div className="mt-4 flex items-center justify-between">
+          <span className="text-2xl font-extrabold text-primary">
+            ${Number(price).toFixed(2)}
+          </span>
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/detalles/${ID_Product}`);
+            }}
+            className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-fixed text-on-primary-fixed transition-transform active:scale-90"
+          >
+            <FaShoppingCart size={18} />
+          </button>
         </div>
-        <p className="font-black text-lg text-primary">{price}</p>
       </div>
-    </div>
+    </article>
   );
 }
