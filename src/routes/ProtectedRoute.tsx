@@ -25,8 +25,7 @@ const ProtectedRoute = () => {
     }
 
     return <Outlet />;
-  } catch (error) {
-    console.log('error:',error)
+  } catch {
     localStorage.removeItem("token");
     return <Navigate to="/login" />;
   }

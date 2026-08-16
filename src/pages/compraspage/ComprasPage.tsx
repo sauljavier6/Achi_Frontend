@@ -1,6 +1,5 @@
 
 import { useState } from "react";
-import styles from "./ComprasPage.module.scss";
 import ComprasList from "../../components/compras/comprasygastos/compraslist/ComprasList";
 import Compras from "../../components/compras/comprasygastos/compras/Compras";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -25,7 +24,7 @@ const ComprasPage = () => {
         });
     },
     onSuccess: () => {
-        toast.success("Compra eliminada con éxito", {
+        toast.success("Compra(s) eliminada(s) correctamente", {
         position: "top-right",
         progressClassName: "custom-progress",
         });
@@ -42,6 +41,8 @@ const ComprasPage = () => {
   };
 
   const handleDeleteProduct = () => {
+    const label = selectedIds.length === 1 ? "esta compra" : `estas ${selectedIds.length} compras`;
+    if (!window.confirm(`¿Deseas eliminar ${label}? Esta acción no se puede deshacer.`)) return;
     mutate(selectedIds);
     setSelectedIds([])
   };
@@ -50,14 +51,15 @@ const ComprasPage = () => {
   return (
     <div>
     {!formOpen && (
-    <div className="p-4 bg-gray-50 rounded-lg">
+    <section className="min-w-0 rounded-2xl border border-slate-200/70 bg-white p-3 sm:p-4">
       <div className="flex flex-col lg:flex-row md:items-center md:justify-between mb-4 gap-2">
-        <h1 className={styles.title}>Compras</h1>
+        <div><p className="text-sm font-semibold text-[#c70063]">Abastecimiento</p><h1 className="text-2xl font-bold text-slate-900">Compras y gastos</h1><p className="text-sm text-slate-500">Registra entradas de mercancía y gastos operativos.</p></div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
           <input
             type="text"
-            placeholder="Buscar compra..."
+            placeholder="Buscar por folio o proveedor"
+            aria-label="Buscar compras"
             value={searchTerm}
             onChange={handleSearchChange}
             className="px-3 py-2 border border-gray-300 rounded-md w-full"
@@ -65,7 +67,7 @@ const ComprasPage = () => {
           {(isAdmin || isTrabajador) && (
           <button
             onClick={handleCreateCompra}
-            className={styles.buttonCrearProducto}
+            className="rounded-xl bg-[#c70063] px-4 py-2.5 font-semibold text-white hover:bg-[#a90054]"
           >
             Registrar compra
           </button>
@@ -77,7 +79,7 @@ const ComprasPage = () => {
             className={`px-4 py-2 rounded font-semibold text-white transition-colors duration-200 
               ${selectedIds?.length === 0 
                 ? 'bg-gray-300 text-gray-600 cursor-not-allowed' 
-                : styles.buttonEliminarProducto}
+                : 'rounded-xl border border-red-600 bg-red-600 text-white hover:bg-red-700'}
             `}
           >
             Eliminar
@@ -89,13 +91,13 @@ const ComprasPage = () => {
       
       <ComprasList onDelete={(id) => setSelectedIds(id)} resetChecks={resetChecks}
       onResetComplete={() => setResetChecks(false)} searchTerm={searchTerm}/>
-    </div>
+    </section>
      )}
 
     {formOpen && (
-      <div className="sm:p-4 bg-gray-50 rounded-lg">
+      <div className="rounded-2xl border border-slate-200/70 bg-white p-3 sm:p-4">
         <div className="p-2 flex items-center justify-between mb-4">
-          <button onClick={() => setFormOpen(false)} className="flex items-center gap-2 hover:text-blue-600">
+          <button onClick={() => setFormOpen(false)} className="flex items-center gap-2 rounded-xl px-3 py-2 font-semibold text-slate-600 hover:bg-slate-100">
             <img
               src="/icons/flecha.png"
               alt="flecha"

@@ -1,48 +1,38 @@
-
-
 const WePage = () => {
   return (
-    <section className="max-w-3xl mx-auto my-8 px-4 sm:px-6 lg:px-8">
-      <h1 className="text-3xl font-bold text-center mb-4">Sobre Nosotros</h1>
-      <p className="text-gray-700 mb-6 text-justify">
-        Bienvenidos a <span className="font-semibold">Medicare TJ</span>, tu clínica de confianza en
-        Tijuana. Nos dedicamos a proporcionar atención médica de calidad, accesible y personalizada,
-        con un enfoque cálido y profesional en cada una de nuestras consultas.
-      </p>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        <div>
-          <h2 className="text-xl font-semibold mb-2">Nuestra Misión</h2>
-          <p className="text-gray-600">
-            Brindar atención de salud confiable y humana, combinando tecnología avanzada con un trato
-            cercano, para que te sientas acompañado y bien cuidado en cada visita.
-          </p>
-        </div>
-        <div>
-          <h2 className="text-xl font-semibold mb-2">Nuestra Visión</h2>
-          <p className="text-gray-600">
-            Ser reconocidos como la mejor alternativa en cuidado médico local, donde cada paciente
-            encuentre seguridad, confianza y resultados integrales.
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-6">
-        <h2 className="text-xl font-semibold mb-2">Lo que nos distingue</h2>
-        <ul className="list-disc list-inside text-gray-600 space-y-2">
-          <li>Atención totalmente personalizada</li>
-          <li>Profesionales dedicados y capacitados</li>
-          <li>Infraestructura médica moderna y segura</li>
-          <li>Valores de ética, cercanía y responsabilidad</li>
-        </ul>
-      </div>
-
-      <div className="mt-6">
-        <h2 className="text-xl font-semibold mb-2">¿Por qué elegirnos?</h2>
-        <p className="text-gray-600">
-          Medicare TJ está a tu lado cuando más lo necesitas: desde consultas generales hasta
-          tratamientos especializados, siempre con honestidad, sensibilidad y pasión por servir.
+    <section className="mx-auto my-10 max-w-4xl px-4 sm:px-6 lg:px-8">
+      <div className="rounded-3xl bg-white p-7 shadow-sm sm:p-10">
+        <p className="font-bold uppercase tracking-widest text-secondary">Conócenos</p>
+        <h1 className="mt-2 text-3xl font-extrabold text-primary sm:text-4xl">Achi Veterinaria</h1>
+        <p className="mt-5 text-lg leading-8 text-on-surface-variant">
+          Somos una veterinaria y tienda para mascotas en Tijuana. Ayudamos a las familias a cuidar
+          a sus compañeros con atención cercana, orientación responsable y productos seleccionados.
         </p>
+
+        <div className="mt-8 grid gap-5 sm:grid-cols-2">
+          <article className="rounded-2xl bg-primary-fixed p-6">
+            <h2 className="text-xl font-bold text-primary">Nuestra misión</h2>
+            <p className="mt-2 leading-7 text-on-surface-variant">
+              Acompañar el bienestar de cada mascota con un servicio humano, claro y profesional.
+            </p>
+          </article>
+          <article className="rounded-2xl bg-secondary-container p-6">
+            <h2 className="text-xl font-bold text-secondary">Nuestro compromiso</h2>
+            <p className="mt-2 leading-7 text-on-surface-variant">
+              Recomendar únicamente lo que cada mascota necesita y mantener una compra segura.
+            </p>
+          </article>
+        </div>
+
+        <div className="mt-8">
+          <h2 className="text-2xl font-bold text-on-surface">Lo que nos distingue</h2>
+          <ul className="mt-4 grid gap-3 text-on-surface-variant sm:grid-cols-2">
+            <li className="rounded-xl bg-surface-container-low p-4">Atención personalizada</li>
+            <li className="rounded-xl bg-surface-container-low p-4">Productos seleccionados</li>
+            <li className="rounded-xl bg-surface-container-low p-4">Compra y pago seguros</li>
+            <li className="rounded-xl bg-surface-container-low p-4">Acompañamiento responsable</li>
+          </ul>
+        </div>
       </div>
     </section>
   );

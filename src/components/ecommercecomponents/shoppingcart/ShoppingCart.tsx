@@ -10,13 +10,9 @@ import {
   FaTruck,
   FaWallet,
 } from "react-icons/fa";
-import { useState } from "react";
 
 export default function ShoppingCart() {
   const navigate = useNavigate();
-  const [paymentMethod, setPaymentMethod] = useState<2 | 6>(2);
-  // 2 = tarjeta
-  // 6 = transferencia
 
   const {
     state,
@@ -32,11 +28,7 @@ export default function ShoppingCart() {
   const handleSubmit = () => {
     if (state.items.length === 0) return;
 
-    navigate("/stripe", {
-      state: {
-        paymentMethod,
-      },
-    });
+    navigate("/pago");
   };
 
   const subtotal = getSubTotal();
@@ -242,31 +234,14 @@ export default function ShoppingCart() {
                       Método de pago
                     </label>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4">
                       <button
                         type="button"
-                        onClick={() => setPaymentMethod(2)}
-                        className={`flex flex-col items-center justify-center rounded-2xl border p-4 transition ${
-                          paymentMethod === 2
-                            ? "border-primary bg-primary/10 text-primary"
-                            : "border-outline-variant bg-white text-on-surface-variant hover:bg-surface-container"
-                        }`}
+                        className="flex flex-col items-center justify-center rounded-2xl border border-primary bg-primary/10 p-4 text-primary"
                       >
                         <FaWallet className="mb-2 text-secondary" size={24} />
-                        <span className="text-sm font-bold">Tarjeta</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setPaymentMethod(6)}
-                        className={`flex flex-col items-center justify-center rounded-2xl border p-4 transition ${
-                          paymentMethod === 6
-                            ? "border-primary bg-primary/10 text-primary"
-                            : "border-outline-variant bg-white text-on-surface-variant hover:bg-surface-container"
-                        }`}
-                      >
-                        <FaWallet className="mb-2 text-secondary" size={24} />
-                        <span className="text-sm font-bold">Transferencia</span>
+                        <span className="text-sm font-bold">Mercado Pago</span>
+                        <span className="mt-1 text-xs">Tarjeta, SPEI, efectivo o saldo</span>
                       </button>
                     </div>
                   </div>

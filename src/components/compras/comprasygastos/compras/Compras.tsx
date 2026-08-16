@@ -80,7 +80,7 @@ interface Payment {
         setPaymentMethod("");
         setAmount("");
         setReference("");
-        toast.success("Stock actualizado", {
+        toast.success("Compra registrada e inventario actualizado", {
         position: "top-right",
         progressClassName: "custom-progress",
         });
@@ -141,7 +141,8 @@ interface Payment {
     };
 
     return (
-      <div className="p-6 bg-white rounded-xl shadow-md max-w-3xl mx-auto">
+      <div className="w-full min-w-0">
+        <div className="mb-6"><p className="text-sm font-semibold text-[#c70063]">Abastecimiento</p><h2 className="text-xl font-bold text-slate-900">Registrar compra o gasto</h2><p className="text-sm text-slate-500">Agrega productos, proveedor y forma de pago.</p></div>
 
         <div className="mb-4 relative">
           <div className="flex justify-between items-center">
@@ -485,7 +486,7 @@ interface Payment {
               <button
                 type="button"
                 onClick={handleAddPayment}
-                className="mt-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                className="mt-2 rounded-xl bg-[#007782] px-4 py-2.5 font-semibold text-white hover:bg-[#00636c]"
               >
                 Agregar pago
               </button>
@@ -545,16 +546,14 @@ interface Payment {
         <button
           onClick={handleSaveSale}
           disabled={products.length === 0}
-          className={`${styles.buttonAgregarCliente} disabled:opacity-50 disabled:cursor-not-allowed`}
+          className="rounded-xl bg-[#c70063] px-5 py-3 font-bold text-white hover:bg-[#a90054] disabled:cursor-not-allowed disabled:opacity-40"
         >
-          Completar
+          Registrar compra
         </button>
         </div>
 
         {modalOpen && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <ModalSuppliers onClose={() => setModalOpen(false)} onSave={handleSaveSupplier}/>
-          </div>
+          <ModalSuppliers onClose={() => setModalOpen(false)} onSave={handleSaveSupplier}/>
         )}
       </div>
     );

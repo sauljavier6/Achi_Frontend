@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import styles from "./Cajas.module.scss";
 import ModalCustomers from "../../sales/customers/modalcustomers/ModalCustomers";
 import { postCustomerSale, postSale, searchProducts } from "../../../api/Post/SaleApi/SaleApi";
@@ -7,9 +7,12 @@ import { useMutation, useQueryClient  } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
 import { getStates } from "../../../api/Post/StateApi/StateApi";
 import { getPayments } from "../../../api/Post/PaymentApi/PaymentApi";
-import { sendTicket } from "../../../api/Post/TicketApi/TicketApi";
+import { openTicket, sendTicket } from "../../../api/Post/TicketApi/TicketApi";
 import { createRetiro } from "../../../api/Post/RetiroApi/RetiroApi";
 import { getAuthUser } from "../../../utils/auth";
+import { lineTotal, numericValue, taxRate, useSaleProducts } from "../../../utils/saleSummary";
+import { getQuoteById, searchQuotesForCheckout } from "../../../api/Post/QuotesApi/QuotesApi";
+import { formatFolio } from "../../../utils/folio";
 
 interface SaleProduct {
   id: number;
@@ -43,11 +46,22 @@ interface SaleData {
   Balance_Total: number;
   Subtotal: number;
   Iva: number;
+  Envio?: number;
   ID_State: number;
   Payment: PaymentSale[];
   ID_Operador: number;
   Lote: string;
   items: SaleItem[];
+  IsCredit?: boolean;
+  SourceQuoteId?: number;
+}
+
+interface LoadedQuote {
+  ID_Sale: number;
+  Total: number;
+  QuoteExpiresAt?: string | null;
+  customerName?: string;
+  customerId?: number;
 }
 
 interface CustomerFormData {
@@ -65,10 +79,16 @@ interface CajasProps {
   Lote: string;
 }
 
+const normalizePaymentName = (value: string) => value
+  .normalize("NFD")
+  .replace(/[\u0300-\u036f]/g, "")
+  .trim()
+  .toLowerCase();
+
   export default function Cajas({ Lote }: CajasProps) {
     const [search, setSearch] = useState('');
     const [debounced, setDebounced] = useState(search);
-    const [products, setProducts] = useState<SaleProduct[]>([]);
+    const [products, setProducts, saleSummary] = useSaleProducts<SaleProduct>();
     const [customerData, setCustomerData] = useState<CustomerFormData | null>(null);
     const [selectedState, setSelectedState] = useState(2);
     const [selectedPayment, setSelectedPayment] = useState<PaymentSale[]>([]);
@@ -76,6 +96,12 @@ interface CajasProps {
     const [paymentMethod, setPaymentMethod] = useState("");
     const [amount, setAmount] = useState("");
     const [reference, setReference] = useState("");
+    const [saleMode, setSaleMode] = useState<"cash" | "credit">("cash");
+    const [searchMode, setSearchMode] = useState<"product" | "quote">("product");
+    const [loadedQuote, setLoadedQuote] = useState<LoadedQuote | null>(null);
+    const [isLoadingQuote, setIsLoadingQuote] = useState(false);
+    const quoteLoadLockRef = useRef(false);
+    const autoQuoteAttemptRef = useRef(0);
 
 
     const [selectedProductsDelete, setSelectedProductsDelete] = useState<number[]>([]);
@@ -83,9 +109,9 @@ interface CajasProps {
     const [modalOpen, setModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<"caja" | "retiro">("caja");
 
-    const subtotal = products.reduce((sum, p) => sum + p.price * p.quantity, 0);
-    const iva = products.reduce((sum, p) => sum + (p.price * p.quantity * p.iva), 0);
-    const total = subtotal + iva;
+    const { itemCount, subtotal, iva, total } = saleSummary;
+    const paidTotal = selectedPayment.reduce((sum, payment) => sum + Number(payment.Monto), 0);
+    const remaining = Math.max(0, total - paidTotal);
 
     const usuario = getAuthUser();
     const idusuario = usuario?.ID_User;
@@ -98,8 +124,81 @@ interface CajasProps {
     const { data, isLoading } = useQuery({
       queryKey: ['search', debounced],
       queryFn: () => searchProducts(debounced || ''),
-      enabled: debounced.length > 0,
+      enabled: searchMode === "product" && debounced.length > 0 && !loadedQuote,
     });
+
+    const { data: quoteSearchData, isLoading: isSearchingQuotes } = useQuery({
+      queryKey: ['quote-checkout-search', debounced],
+      queryFn: () => searchQuotesForCheckout(debounced),
+      enabled: searchMode === "quote" && debounced.trim().length > 0 && !loadedQuote,
+    });
+
+    const handleLoadQuote = useCallback(async (quoteId: number) => {
+      if (quoteLoadLockRef.current) return;
+      quoteLoadLockRef.current = true;
+      setIsLoadingQuote(true);
+      try {
+        const response = await getQuoteById(quoteId);
+        const quote = response.data;
+        if (quote.DocumentStatus !== "ACTIVE" || quote.ConvertedSaleId) {
+          throw new Error(`La cotización ya fue convertida${quote.ConvertedSaleId ? ` en la venta #${quote.ConvertedSaleId}` : ""}`);
+        }
+        if (quote.QuoteExpiresAt && new Date(quote.QuoteExpiresAt).getTime() < Date.now()) {
+          throw new Error("La cotización está vencida. Actualízala antes de cobrarla.");
+        }
+        const mappedProducts: SaleProduct[] = (quote.SaleProduct ?? []).map((item: any) => ({
+          id: Number(item.ID_Stock),
+          productId: Number(item.ID_Product),
+          name: `${item.Product?.Description || "Producto"} - ${item.Stock?.Description || "Presentación"}`,
+          quantity: Number(item.Quantity),
+          price: Number(item.Saleprice),
+          maxAmount: Number(item.Stock?.Amount ?? 0),
+          stockVariant: item.Stock?.Description,
+          iva: Number(item.TaxRate ?? item.Product?.Iva?.Iva ?? 0),
+        }));
+        if (!mappedProducts.length) throw new Error("La cotización no contiene productos");
+        const unavailable = mappedProducts.find((product) => !product.maxAmount || product.quantity > Number(product.maxAmount));
+        if (unavailable) throw new Error(`No hay stock suficiente para ${unavailable.name}`);
+        setProducts(mappedProducts);
+        setCustomerData(quote.user ?? null);
+        setLoadedQuote({
+          ID_Sale: Number(quote.ID_Sale),
+          Total: Number(quote.Total),
+          QuoteExpiresAt: quote.QuoteExpiresAt,
+          customerName: quote.user?.Name,
+          customerId: quote.user?.ID_User ? Number(quote.user.ID_User) : undefined,
+        });
+        setSelectedPayment([]);
+        setPaymentMethod("");
+        setAmount("");
+        setSearch("");
+        setSearchMode("quote");
+        setIdSale(null);
+        toast.success(`Cotización ${formatFolio(quote.ID_Sale)} cargada en Caja`);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "No fue posible cargar la cotización");
+      } finally {
+        setIsLoadingQuote(false);
+        quoteLoadLockRef.current = false;
+      }
+    }, [setProducts]);
+
+    useEffect(() => {
+      const quoteId = Number(new URLSearchParams(window.location.search).get("quote") || 0);
+      if (quoteId > 0 && !loadedQuote && autoQuoteAttemptRef.current !== quoteId) {
+        autoQuoteAttemptRef.current = quoteId;
+        void handleLoadQuote(quoteId);
+      }
+    }, [handleLoadQuote, loadedQuote]);
+
+    const clearLoadedQuote = () => {
+      setLoadedQuote(null);
+      setProducts([]);
+      setCustomerData(null);
+      setSelectedPayment([]);
+      setSearch("");
+      window.history.replaceState({}, "", window.location.pathname);
+    };
 
     const { data: states } = useQuery({
       queryKey: ['states'],
@@ -110,6 +209,14 @@ interface CajasProps {
       queryKey: ['payments'],
       queryFn: getPayments,
     });
+    const availablePaymentMethods = (paymentsData?.data ?? []).filter(
+      (payment: PaymentSale) => normalizePaymentName(payment.Description) !== "credito",
+    );
+    const selectedPaymentDescription = paymentsData?.data?.find((payment: PaymentSale) => payment.ID_Payment === Number(paymentMethod))?.Description || "";
+    const isCashPayment = selectedPaymentDescription.toLowerCase().includes("efectivo");
+    const tenderedAmount = Number(amount || 0);
+    const change = isCashPayment ? Math.max(0, tenderedAmount - remaining) : 0;
+    const paymentCovered = products.length > 0 && (saleMode === "credit" ? Boolean(customerData?.ID_User) : remaining <= 0.009);
 
     const queryClient = useQueryClient();
 
@@ -121,6 +228,11 @@ interface CajasProps {
           });
       },
       onSuccess: (data) => {
+          const successMessage = loadedQuote
+            ? `Cotización ${formatFolio(loadedQuote.ID_Sale)} convertida en venta ${formatFolio(data.data.ID_Sale)}`
+            : saleMode === "credit"
+              ? `Venta a crédito ${formatFolio(data.data.ID_Sale)} registrada correctamente`
+              : `Venta ${formatFolio(data.data.ID_Sale)} cobrada correctamente`;
           setIdSale(data.data.ID_Sale)
           setCustomerData(null);
           setProducts([]);
@@ -128,7 +240,10 @@ interface CajasProps {
           setPaymentMethod("");
           setAmount("");
           setReference("");
-          toast.success("Venta registrada con éxito", {
+          setSaleMode("cash");
+          setLoadedQuote(null);
+          window.history.replaceState({}, "", window.location.pathname);
+          toast.success(successMessage, {
           position: "top-right",
           progressClassName: "custom-progress",
           });
@@ -145,7 +260,7 @@ interface CajasProps {
       },
       onSuccess: (data) => {
           setCustomerData(data.data);
-          toast.success("Cliente registrado con éxito", {
+          toast.success("Cliente creado y asignado a la venta", {
           position: "top-right",
           progressClassName: "custom-progress",
           });
@@ -161,7 +276,7 @@ interface CajasProps {
           });
       },
       onSuccess: () => {
-          toast.success("Ticket enviado con éxito", {
+          toast.success("Ticket de venta enviado por correo", {
           position: "top-right",
           progressClassName: "custom-progress",
           });
@@ -171,7 +286,15 @@ interface CajasProps {
 
     const handleSaveSale = async () => {
       if (products.length === 0) {
-        alert("Debes seleccionar productos para completar la venta.");
+        toast.warn("Agrega al menos un producto antes de cobrar.");
+        return;
+      }
+      if (saleMode === "credit" && !customerData?.ID_User) {
+        toast.warn("Selecciona un cliente para registrar una venta a crédito.");
+        return;
+      }
+      if (saleMode === "cash" && !paymentCovered) {
+        toast.warn(`Falta registrar ${remaining.toLocaleString("es-MX", { style: "currency", currency: "MXN" })} para completar la venta.`);
         return;
       }
 
@@ -181,6 +304,7 @@ interface CajasProps {
         Balance_Total: total,
         Subtotal: subtotal,
         Iva: iva,
+        Envio: 0,
         ID_State: selectedState,
         ID_Operador: Number(idusuario),
         Lote: Lote,
@@ -197,7 +321,11 @@ interface CajasProps {
           price: p.price,
           subtotal: p.price * p.quantity,
         })),
+        IsCredit: saleMode === "credit",
+        SourceQuoteId: loadedQuote?.ID_Sale,
       };
+
+      if (saleMode === "credit" && !window.confirm(`¿Registrar venta a crédito por ${total.toLocaleString("es-MX", { style: "currency", currency: "MXN" })} a nombre de ${customerData?.Name}?`)) return;
 
       mutate(saleData);
     };
@@ -217,6 +345,15 @@ interface CajasProps {
 
     const handleAddPayment = () => {
       if (!paymentMethod || !amount) return;
+      const enteredAmount = Number(amount);
+      if (!Number.isFinite(enteredAmount) || enteredAmount <= 0) {
+        toast.warn("Ingresa un monto válido.");
+        return;
+      }
+      if (!isCashPayment && enteredAmount > remaining + 0.009) {
+        toast.warn("El pago no puede superar el saldo pendiente.");
+        return;
+      }
 
       const selectedPaymentData = paymentsData.data.find(
         (p: PaymentSale) => p.ID_Payment === Number(paymentMethod)
@@ -227,7 +364,7 @@ interface CajasProps {
         {
           ID_Payment: Number(paymentMethod),
           Description: selectedPaymentData?.Description || "",
-          Monto: parseFloat(amount),
+          Monto: isCashPayment ? Math.min(enteredAmount, remaining) : enteredAmount,
           ReferenceNumber: reference || "",
         },
       ]);
@@ -244,9 +381,14 @@ interface CajasProps {
 
     const handleImpresTicket = async () => {
       try {
-        window.open(`${import.meta.env.VITE_API_URL}/ticket/${idSale}`, "_blank");
+        if (!idSale) {
+          toast.info("Primero registra una venta para generar el ticket.");
+          return;
+        }
+        await openTicket(idSale);
       } catch (error) {
         console.error("Error al imprimir el ticket:", error);
+        toast.error("No fue posible abrir el ticket de la venta.");
       }
     };
 
@@ -292,7 +434,7 @@ interface CajasProps {
                 Batch: Lote,
                 ID_Operador: idusuario,
               });
-          toast.success(data.message , {
+          toast.success("Retiro de caja registrado correctamente", {
           position: "top-right",
           progressClassName: "custom-progress",
           });
@@ -303,29 +445,21 @@ interface CajasProps {
     const isFormValid = Number(dataRetiro.Amount) > 0 && dataRetiro.Description.trim() !== "" && dataRetiro.Payment !== "";
 
     return (
-      <div className="p-6 bg-white rounded-xl shadow-md max-w-3xl mx-auto">
+      <div className="w-full">
         
         {/* Encabezado */}
-        <div className="flex justify-start gap-0 mb-6 bg-gray-200 p-0 rounded-full text-sm w-44">
+        <div className="mb-6 grid w-full grid-cols-2 rounded-xl bg-slate-100 p-1 text-sm sm:w-72">
           <button
             type="button"
             onClick={() => setActiveTab("caja")}
-            className={`px-4 py-2 rounded ${
-              activeTab === "caja"
-                ? styles.tabActive
-                : styles.tabinActive
-            }`}
+            className={`rounded-lg px-4 py-2.5 font-semibold transition ${activeTab === "caja" ? "bg-white text-[#c70063] shadow-sm" : "text-slate-500 hover:text-slate-800"}`}
           >
             Caja
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("retiro")}
-            className={`px-4 py-2 rounded ${
-              activeTab === "retiro"
-                ? styles.tabActive
-                : styles.tabinActive
-            }`}
+            className={`rounded-lg px-4 py-2.5 font-semibold transition ${activeTab === "retiro" ? "bg-white text-[#c70063] shadow-sm" : "text-slate-500 hover:text-slate-800"}`}
           >
             Retiro
           </button>
@@ -334,13 +468,15 @@ interface CajasProps {
         {activeTab === "caja" && (  
         <>
         <div className="mb-4 relative">
-          <div className="flex justify-between items-center">
+          {loadedQuote && <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-[#007782]/25 bg-[#007782]/5 p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs font-black uppercase tracking-wide text-[#007782]">Cotización cargada</p><p className="font-bold text-slate-900">Cotización {formatFolio(loadedQuote.ID_Sale)}{loadedQuote.customerName ? ` · ${loadedQuote.customerName}` : ""}</p><p className="text-sm text-slate-600">Se respetarán sus precios e impuestos. Las partidas no pueden modificarse durante el cobro.</p></div><button type="button" onClick={clearLoadedQuote} className="rounded-xl border border-slate-300 bg-white px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50">Quitar cotización</button></div>}
+          <div className="mb-2 flex items-center justify-between gap-3"><label className="block text-sm font-semibold text-slate-700">Agregar a la venta</label><div className="grid grid-cols-2 rounded-xl bg-slate-100 p-1 text-xs"><button type="button" disabled={Boolean(loadedQuote)} onClick={() => { setSearchMode("product"); setSearch(""); }} className={`rounded-lg px-3 py-1.5 font-semibold ${searchMode === "product" ? "bg-white text-[#c70063] shadow-sm" : "text-slate-500"}`}>Productos</button><button type="button" disabled={Boolean(loadedQuote)} onClick={() => { setSearchMode("quote"); setSearch(""); }} className={`rounded-lg px-3 py-1.5 font-semibold ${searchMode === "quote" ? "bg-white text-[#c70063] shadow-sm" : "text-slate-500"}`}>Cotización</button></div></div><div className="flex flex-col gap-2 sm:flex-row">
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar producto..."
-              className="border rounded px-3 py-2 w-full mr-2"
+              disabled={Boolean(loadedQuote)}
+              placeholder={searchMode === "product" ? "Buscar producto o escanear código..." : "Folio, COT-123 o nombre del cliente..."}
+              className="min-h-11 w-full rounded-xl border border-slate-300 px-4 outline-none focus:border-[#c70063] focus:ring-4 focus:ring-[#c70063]/10"
             />
             <button
               onClick={() => {
@@ -349,34 +485,43 @@ interface CajasProps {
                 );
                 setSelectedProductsDelete([]);
               }}
-              className={styles.removeButton}
+              disabled={selectedProductsDelete.length === 0 || Boolean(loadedQuote)}
+              className="rounded-xl border border-red-200 px-4 py-2.5 font-semibold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
             >
               Quitar
             </button>
           </div>
 
-          {data?.map((product:any) => (
-            <li
-              key={product.ID_Product}
-              className="px-4 py-2 hover:bg-gray-100 cursor-pointer list-none"
-            >
-              <span>{product.Description} - {product.Code}</span>
-              <ul className="pl-4">
-                {product.Stock?.map((variant:any) => (
-                  <li
-                    key={variant.ID_Stock}
-                    onClick={() => {
+          {search.trim().length > 0 && !loadedQuote && (
+            <div className="absolute left-0 right-0 top-full z-30 mt-2 max-h-80 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-xl shadow-slate-900/10">
+              {searchMode === "product" && isLoading && <div className="px-3 py-4 text-sm text-slate-500">Buscando productos…</div>}
+              {searchMode === "product" && !isLoading && data?.map((product:any) => (
+                <div key={product.ID_Product} className="border-b border-slate-100 py-1 last:border-0">
+                  <div className="px-3 py-2">
+                    <p className="font-bold text-slate-900">{product.Description}</p>
+                    {product.Code && <p className="text-xs text-slate-500">Código: {product.Code}</p>}
+                  </div>
+                  <div className="space-y-1">
+                    {product.Stock?.map((variant:any) => (
+                      <button
+                        type="button"
+                        key={variant.ID_Stock}
+                        disabled={Number(variant.Amount) <= 0}
+                        onClick={() => {
+                      setIdSale(null);
                       setProducts((prev) => {
-                        setIdSale(null)
                         const exists = prev.find(p => p.id === variant.ID_Stock);
                         if (exists) {
+                          if (exists.quantity >= Number(variant.Amount)) {
+                            toast.warn("No hay más unidades disponibles de esta presentación.");
+                            return prev;
+                          }
                           return prev.map(p =>
                             p.id === variant.ID_Stock
                               ? { ...p, quantity: p.quantity + 1 }
                               : p
                           );
                         } else {
-                          setIdSale(null);
                           return [
                             ...prev,
                             {
@@ -384,35 +529,35 @@ interface CajasProps {
                               productId: product.ID_Product,
                               name: `${product.Description} - ${variant.Description}`,
                               quantity: 1,
-                              price: variant.Saleprice,
-                              maxAmount: variant.Amount,
+                              price: numericValue(variant.Saleprice),
+                              maxAmount: numericValue(variant.Amount),
                               stockVariant: variant.Description,
-                              iva: product.Iva.Iva,
+                              iva: taxRate(product.Iva?.Iva),
                             }
                           ];
                         }
                       });
                       setSearch('');
-                    }}
-
-                    className="py-1 pl-4 hover:bg-gray-200 cursor-pointer"
-                  >
-                    Variante: {variant.Description} - ${variant.Saleprice}
-                  </li>
-                ))}
-              </ul>
-            </li>
-          ))}
-
-          {search.length > 0 && !isLoading && data?.length === 0 && (
-            <div className="absolute top-full left-0 w-full bg-white border border-gray-300 rounded shadow-md z-10 px-4 py-2 text-gray-500">
-              No se encontraron productos.
+                        }}
+                        className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-[#c70063]/5 disabled:cursor-not-allowed disabled:opacity-45"
+                      >
+                        <span><span className="block font-semibold text-slate-800">{variant.Description || "Presentación general"}</span><span className="text-xs text-slate-500">Stock: {variant.Amount}</span></span>
+                        <strong className="shrink-0 text-[#c70063]">${Number(variant.Saleprice).toFixed(2)}</strong>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              {searchMode === "product" && !isLoading && data?.length === 0 && <div className="px-3 py-4 text-sm text-slate-500">No encontramos productos con esa búsqueda.</div>}
+              {searchMode === "quote" && (isSearchingQuotes || isLoadingQuote) && <div className="px-3 py-4 text-sm text-slate-500">Buscando cotizaciones…</div>}
+              {searchMode === "quote" && !isSearchingQuotes && quoteSearchData?.data?.map((quote: any) => <button type="button" key={quote.ID_Sale} disabled={quote.expired || isLoadingQuote} onClick={() => handleLoadQuote(Number(quote.ID_Sale))} className="flex w-full items-center justify-between gap-4 rounded-xl px-3 py-3 text-left hover:bg-[#007782]/5 disabled:opacity-45"><span><span className="block font-bold text-slate-900">Cotización {formatFolio(quote.ID_Sale)}</span><span className="block text-xs text-slate-500">{quote.user?.Name || "Público general"}{quote.expired ? " · Vencida" : ""}</span></span><strong className="text-[#007782]">${Number(quote.Total).toFixed(2)}</strong></button>)}
+              {searchMode === "quote" && !isSearchingQuotes && quoteSearchData?.data?.length === 0 && <div className="px-3 py-4 text-sm text-slate-500">No encontramos cotizaciones activas.</div>}
             </div>
           )}
         </div>
 
-        <div className="border rounded p-4 mb-4 overflow-x-auto">
-          <h3 className="font-semibold mb-2">Productos en venta</h3>
+        <div translate="no" className="notranslate mb-5 overflow-x-auto rounded-2xl border border-slate-200 p-3 sm:p-4">
+          <div className="mb-3 flex items-center justify-between"><h3 className="font-bold text-slate-900">Productos de la venta</h3><span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">{`${itemCount} artículos`}</span></div>
 
           {/* Vista tabla en pantallas medianas y grandes */}
           <table className="hidden sm:table w-full text-sm">
@@ -421,6 +566,7 @@ interface CajasProps {
                 <th className="text-left">
                   <input
                     type="checkbox"
+                    disabled={Boolean(loadedQuote)}
                     checked={allSelected}
                     onChange={(e) => {
                       if (e.target.checked) {
@@ -443,6 +589,7 @@ interface CajasProps {
                   <td>
                     <input
                       type="checkbox"
+                      disabled={Boolean(loadedQuote)}
                       checked={selectedProductsDelete.includes(p.id)}
                       onChange={(e) => {
                         const checked = e.target.checked;
@@ -456,6 +603,7 @@ interface CajasProps {
                   <td className="text-center">
                     <input
                       type="number"
+                      disabled={Boolean(loadedQuote)}
                       min={1}
                       max={p.maxAmount || 999}
                       value={p.quantity}
@@ -474,7 +622,7 @@ interface CajasProps {
                     />
                   </td>
                   <td className="text-center">${p.price}</td>
-                  <td className="text-center">${(p.price * p.quantity).toFixed(2)}</td>
+                  <td className="text-center">${lineTotal(p).toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>
@@ -491,6 +639,7 @@ interface CajasProps {
                   <div className="flex items-center gap-2">
                     <input
                       type="checkbox"
+                      disabled={Boolean(loadedQuote)}
                       checked={selectedProductsDelete.includes(p.id)}
                       onChange={(e) => {
                         const checked = e.target.checked;
@@ -508,6 +657,7 @@ interface CajasProps {
                   <span className="text-sm text-gray-500">Cantidad:</span>
                   <input
                     type="number"
+                    disabled={Boolean(loadedQuote)}
                     min={1}
                     max={p.maxAmount || 999}
                     value={p.quantity}
@@ -528,8 +678,8 @@ interface CajasProps {
 
                 <div className="flex justify-between items-center border-t pt-2">
                   <span className="font-medium">Subtotal:</span>
-                  <span className="text-green-600 font-semibold">
-                    ${(p.price * p.quantity).toFixed(2)}
+                  <span className="font-semibold text-[#007782]">
+                    ${lineTotal(p).toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -537,19 +687,29 @@ interface CajasProps {
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-wrap md:flex-row justify-between items-start md:items-center gap-4 mb-4">
-          <div className="text-sm w-full md:flex-1 md:min-w-[200px]">
-            <p>Subtotal: ${subtotal.toFixed(2)}</p>
-            <p>IVA: ${iva.toFixed(2)}</p>
-            <p className="font-semibold">Total: ${total.toFixed(2)}</p>
+        <div translate="no" className="notranslate mb-5 grid gap-4 rounded-2xl bg-slate-50 p-4 sm:grid-cols-[1fr_auto] sm:items-center">
+          <div className="w-full text-sm text-slate-600">
+            <p className="flex justify-between gap-8"><span>Subtotal</span><span>{`$${subtotal.toFixed(2)}`}</span></p>
+            <p className="flex justify-between gap-8"><span>IVA</span><span>{`$${iva.toFixed(2)}`}</span></p>
+            <p className="mt-2 flex justify-between gap-8 border-t border-slate-200 pt-2 text-lg font-bold text-slate-900"><span>Total</span><span>{`$${total.toFixed(2)}`}</span></p>
           </div>
-          <button onClick={handleCreateCustomer} className={styles.buttonAgregarCliente}>
-            + Agregar cliente
+          <button onClick={handleCreateCustomer} disabled={Boolean(loadedQuote?.customerId)} className="rounded-xl border border-[#007782]/30 bg-white px-4 py-2.5 font-semibold text-[#007782] hover:bg-[#007782]/5 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400 disabled:hover:bg-white">
+            {customerData ? "Cambiar cliente" : "Agregar cliente"}
           </button>
         </div>
 
+        {customerData && (
+          <div className="mb-5 flex items-start justify-between gap-3 rounded-2xl border border-[#007782]/20 bg-[#007782]/5 p-4">
+            <div className="min-w-0"><p className="text-xs font-bold uppercase tracking-wide text-[#007782]">Cliente asignado</p><p className="truncate font-bold text-slate-900">{customerData.Name}</p><p className="truncate text-sm text-slate-600">{customerData.Email}</p>{customerData.Phone && <p className="text-sm text-slate-500">{customerData.Phone}</p>}</div>
+            {!loadedQuote?.customerId && <button type="button" onClick={() => setCustomerData(null)} className="shrink-0 rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-white">Quitar</button>}
+          </div>
+        )}
+
+        <div className="mb-5"><p className="mb-2 text-sm font-semibold text-slate-700">Tipo de venta</p><div className="grid grid-cols-2 rounded-xl bg-slate-100 p-1"><button type="button" onClick={() => setSaleMode("cash")} className={`rounded-lg px-3 py-2.5 font-semibold ${saleMode === "cash" ? "bg-white text-[#c70063] shadow-sm" : "text-slate-500"}`}>Pago inmediato</button><button type="button" onClick={() => { setSaleMode("credit"); setSelectedPayment([]); setPaymentMethod(""); setAmount(""); }} className={`rounded-lg px-3 py-2.5 font-semibold ${saleMode === "credit" ? "bg-white text-[#c70063] shadow-sm" : "text-slate-500"}`}>Venta a crédito</button></div></div>
+        {saleMode === "credit" && <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"><p className="font-bold">El cliente pagará después</p><p>El total quedará como saldo pendiente y aparecerá en Ventas para registrar abonos. Es obligatorio asignar un cliente.</p></div>}
+
         <div className="flex flex-col md:flex-wrap md:flex-row justify-between items-start md:items-center gap-4 mb-4">
-          <div className="text-sm w-full md:flex-1 md:min-w-[200px]">
+          {saleMode === "cash" && <div className="text-sm w-full md:flex-1 md:min-w-[200px]">
             <select
               id="tipoPago"
               name="tipoPago"
@@ -565,27 +725,27 @@ interface CajasProps {
                 </option>
               ))}
             </select>
-          </div>
+          </div>}
 
-          <div className="text-sm w-full md:flex-1 md:min-w-[200px]">
+          {saleMode === "cash" && <div className="text-sm w-full md:flex-1 md:min-w-[200px]">
             <select
               id="metodoPago"
               name="metodoPago"
               className="border rounded px-3 py-2 w-full"
               value={paymentMethod}
-              onChange={(e) => setPaymentMethod(e.target.value)}
+              onChange={(e) => { setPaymentMethod(e.target.value); setAmount(remaining > 0 ? remaining.toFixed(2) : ""); }}
             >
               <option value="">Selecciona un método de pago</option>
-              {paymentsData?.data?.map((payment: any) => (
+              {availablePaymentMethods.map((payment: PaymentSale) => (
                 <option key={payment.ID_Payment} value={payment.ID_Payment}>
                   {payment.Description}
                 </option>
               ))}
             </select>
-          </div>
+          </div>}
         </div>
 
-        {paymentMethod && (
+        {saleMode === "cash" && paymentMethod && (
           <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 gap-4">
             <div className="w-full">
               <label htmlFor="paymentAmount" className="block text-sm font-medium text-gray-700">
@@ -598,10 +758,13 @@ interface CajasProps {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="Ej. 500.00"
+                min="0.01"
+                step="0.01"
                 className="w-full max-w-full border rounded px-3 py-2"
                 required
               />
             </div>
+            {isCashPayment && tenderedAmount > 0 && <div className="col-span-full rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800"><span className="font-semibold">Cambio a entregar:</span> {change.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}</div>}
 
             <div className="w-full">
               <label htmlFor="reference" className="block text-sm font-medium text-gray-700">
@@ -623,7 +786,7 @@ interface CajasProps {
                 type="button"
                 onClick={handleAddPayment}
                 disabled={!amount}
-                className="w-full sm:w-auto bg-blue-600 text-white font-semibold py-2 px-4 rounded hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full rounded-xl bg-[#007782] px-4 py-2.5 font-semibold text-white hover:bg-[#00636c] disabled:opacity-40 sm:w-auto"
               >
                 Agregar pago
               </button>
@@ -631,7 +794,7 @@ interface CajasProps {
           </div>
         )}
 
-        {selectedPayment.length > 0 && (
+        {saleMode === "cash" && selectedPayment.length > 0 && (
           <div className="mt-6">
             <h3 className="font-semibold mb-2">Pagos agregados:</h3>
 
@@ -679,27 +842,27 @@ interface CajasProps {
         )}
 
 
-        <div className="flex flex-col sm:flex-row flex-wrap mt-10 gap-2 sm:justify-end w-full">
+        <div className="mt-8 grid w-full gap-2 border-t border-slate-200 pt-5 sm:grid-cols-[auto_auto_1fr]">
           <button
             onClick={handleImpresTicket}
-            className="w-full sm:w-auto bg-green-600 text-white font-semibold py-2 px-4 rounded hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full rounded-xl border border-slate-300 px-4 py-2.5 font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
             disabled={!idSale}
           >
             Imprimir ticket
           </button>
           <button
             onClick={handleSendTicket}
-            className="w-full sm:w-auto bg-yellow-500 text-white font-semibold py-2 px-4 rounded hover:bg-yellow-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full rounded-xl border border-slate-300 px-4 py-2.5 font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
             disabled={!idSale}
           >
             Enviar por correo
           </button>
           <button
             onClick={handleSaveSale}
-            disabled={products.length === 0}
-            className="w-full sm:w-auto bg-blue-600 text-white font-semibold py-2 px-4 rounded hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!paymentCovered}
+            className="w-full rounded-xl bg-[#c70063] px-5 py-3 font-bold text-white hover:bg-[#a90054] disabled:cursor-not-allowed disabled:opacity-40 sm:ml-auto"
           >
-            Completar
+            {saleMode === "credit" ? (customerData ? "Registrar venta a crédito" : "Selecciona un cliente") : paymentCovered ? "Confirmar cobro y venta" : `Falta cobrar $${remaining.toFixed(2)}`}
           </button>
         </div>
         </>
@@ -772,7 +935,7 @@ interface CajasProps {
                 <option value="" disabled>
                   Selecciona un método de pago
                 </option>
-                {paymentsData?.data?.map((payment: any) => (
+                {availablePaymentMethods.map((payment: PaymentSale) => (
                   <option key={payment.ID_Payment} value={payment.ID_Payment}>
                     {payment.Description}
                   </option>
@@ -804,9 +967,7 @@ interface CajasProps {
 
 
         {modalOpen && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <ModalCustomers onClose={() => setModalOpen(false)} onSave={handleSaveCustomer} />
-          </div>
+          <ModalCustomers onClose={() => setModalOpen(false)} onSave={handleSaveCustomer} />
         )}
       </div>
     );

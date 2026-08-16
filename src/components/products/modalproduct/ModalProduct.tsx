@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from "react";
-import styles from "./ModalProducts.module.scss";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 import {
@@ -11,14 +10,19 @@ import { getCategory } from "../../../api/Post/CategoryApi/CategoryApi";
 import { getIvaDatos } from "../../../api/Post/ivaApi/IvaApi";
 import ModalCategory from "../../category/modalcategory/ModalCategory";
 import { getSubCategory } from "../../../api/Post/SubCategoryApi/SubCategoryApi";
+import ModalSubCategory from "../../subcategory/modalsubcategory/ModalSubCategory";
 
 interface ModalProductProps {
   onClose: () => void;
   onEdit?: number | null;
 }
+type CategoryOption = { ID_Category: number; Description: string };
+type SubCategoryOption = { ID_SubCategory: number; Description: string };
+type IvaOption = { ID_Iva: number; Description: string };
 
 const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
   const [openCategoryModal, setOpenCategoryModal] = useState(false);
+  const [openSubCategoryModal, setOpenSubCategoryModal] = useState(false);
   const [products, setProducts] = useState({
     Description: "",
     ID_Category: 0,
@@ -35,9 +39,8 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
     ],
     Imagenes: [] as { file: File; preview: string }[],
     ID_Iva: 0,
+    State: true,
   });
-
-  console.log("products", products);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -55,6 +58,7 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
             StockData: data.Stock || [],
             Imagenes: data.Imagenes,
             ID_Iva: data.ID_Iva,
+            State: data.State ?? true,
           });
         } catch (error) {
           console.error("Error cargando producto:", error);
@@ -82,28 +86,28 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
 
   const queryClient = useQueryClient();
 
-  const { mutate } = useMutation({
+  const { mutate, isPending: isCreating } = useMutation({
     mutationFn: postProduct,
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(`${error.message}`, { position: "top-right" });
     },
     onSuccess: () => {
       resetForm();
       onClose();
-      toast.success("Producto registrado con éxito", { position: "top-right" });
+      toast.success("Producto creado correctamente", { position: "top-right" });
       queryClient.invalidateQueries({ queryKey: ["products"] });
     },
   });
 
-  const { mutate: updatemutate } = useMutation({
+  const { mutate: updatemutate, isPending: isUpdating } = useMutation({
     mutationFn: updateProduct,
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(`${error.message}`, { position: "top-right" });
     },
     onSuccess: () => {
       resetForm();
       onClose();
-      toast.success("Producto actualizado con éxito", {
+      toast.success("Producto actualizado correctamente", {
         position: "top-right",
       });
       queryClient.invalidateQueries({ queryKey: ["products"] });
@@ -166,6 +170,7 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
       ],
       Imagenes: [],
       ID_Iva: 0,
+      State: true,
     });
 
     if (fileInputRef.current) {
@@ -235,21 +240,21 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
-        <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+      <div className="fixed inset-0 z-50 flex items-stretch justify-center overflow-hidden bg-black/50 p-0 sm:items-center sm:p-3">
+        <div className="flex h-[100dvh] max-h-[100dvh] w-full max-w-4xl flex-col overflow-hidden bg-white shadow-2xl sm:h-auto sm:max-h-[94vh] sm:rounded-2xl">
           {/* Header */}
-          <div className="flex justify-between items-center border-b pb-3 mb-4">
-            <h2 className="text-xl font-bold text-gray-800">Crear Producto</h2>
+          <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-4 py-4 sm:px-6">
+            <div><p className="text-sm font-semibold text-[#c70063]">Catálogo</p><h2 className="text-xl font-bold text-slate-900">{onEdit ? "Editar producto" : "Nuevo producto"}</h2><p className="text-sm text-slate-500">Completa los datos generales y sus presentaciones.</p></div>
             <button
               onClick={handleClose}
-              className="p-2 rounded hover:bg-gray-100"
+              className="shrink-0 rounded-xl p-2 hover:bg-slate-100"
             >
               <img src="/icons/close.png" alt="Cerrar" className="w-5 h-5" />
             </button>
           </div>
 
           {/* Formulario */}
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-contain px-4 py-5 sm:px-6">
             {/* Inputs básicos */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <input
@@ -260,18 +265,27 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
                   setProducts({ ...products, Description: e.target.value })
                 }
                 placeholder="Nombre del producto"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
+                aria-label="Nombre del producto"
+                required
+                className="min-h-11 min-w-0 w-full rounded-xl border border-slate-300 px-4 py-2 outline-none focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10"
               />
+
+              <select aria-label="Estado del producto" value={products.State ? "true" : "false"} onChange={(e) => setProducts({ ...products, State: e.target.value === "true" })} className="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-4 py-2 outline-none transition focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10">
+                <option value="true">Activo</option>
+                <option value="false">Inactivo</option>
+              </select>
 
               <select
                 id="ID_Category"
                 name="ID_Category"
                 value={products.ID_Category}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
+                aria-label="Categoría"
+                required
+                className="min-h-11 min-w-0 w-full rounded-xl border border-slate-300 px-4 py-2 outline-none focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10"
               >
                 <option value="">Selecciona categoría</option>
-                {categoryData?.data?.map((cat: any) => (
+                {categoryData?.data?.map((cat: CategoryOption) => (
                   <option key={cat.ID_Category} value={cat.ID_Category}>
                     {cat.Description}
                   </option>
@@ -280,20 +294,22 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
                 <option value={-1}>➕ Crear nueva categoría</option>
               </select>
 
-              <select
+              <select aria-label="Subcategoría"
                 id="ID_SubCategory"
                 name="ID_SubCategory"
                 value={products.ID_SubCategory}
-                onChange={(e) =>
-                  setProducts({
-                    ...products,
-                    ID_SubCategory: Number(e.target.value),
-                  })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
+                onChange={(e) => {
+                  const value = Number(e.target.value);
+                  if (value === -1) {
+                    setOpenSubCategoryModal(true);
+                    return;
+                  }
+                  setProducts({ ...products, ID_SubCategory: value });
+                }}
+                className="min-h-11 min-w-0 w-full rounded-xl border border-slate-300 px-4 py-2 outline-none focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10"
               >
                 <option value="">Selecciona subcategoría</option>
-                {subcategoryData?.data?.map((cat: any) => (
+                {subcategoryData?.data?.map((cat: SubCategoryOption) => (
                   <option key={cat.ID_SubCategory} value={cat.ID_SubCategory}>
                     {cat.Description}
                   </option>
@@ -306,25 +322,29 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
                 type="text"
                 id="Code"
                 name="Code"
+                aria-label="Código del producto"
+                required
                 value={products.Code}
                 onChange={(e) =>
                   setProducts({ ...products, Code: e.target.value })
                 }
                 placeholder="Código del producto"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
+                className="min-h-11 min-w-0 w-full rounded-xl border border-slate-300 px-4 py-2 outline-none focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10"
               />
 
               <select
                 id="Iva"
                 name="ID_Iva"
+                aria-label="IVA"
+                required
                 value={products.ID_Iva}
                 onChange={(e) =>
                   setProducts({ ...products, ID_Iva: Number(e.target.value) })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
+                className="min-h-11 min-w-0 w-full rounded-xl border border-slate-300 px-4 py-2 outline-none focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10"
               >
                 <option value="">Selecciona IVA</option>
-                {ivaData?.data?.map((iva: any) => (
+                {ivaData?.data?.map((iva: IvaOption) => (
                   <option key={iva.ID_Iva} value={iva.ID_Iva}>
                     {iva.Description}
                   </option>
@@ -335,12 +355,13 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
                 type="text"
                 id="Codesat"
                 name="Codesat"
+                aria-label="Código SAT"
                 value={products.Codesat}
                 onChange={(e) =>
                   setProducts({ ...products, Codesat: e.target.value })
                 }
                 placeholder="Código SAT"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
+                className="min-h-11 min-w-0 w-full rounded-xl border border-slate-300 px-4 py-2 outline-none focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10"
               />
 
               <input
@@ -349,7 +370,8 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
                 onChange={handleImageChange}
                 accept="image/*"
                 multiple
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
+                aria-label="Imágenes del producto"
+                className="min-h-11 min-w-0 w-full rounded-xl border border-slate-300 px-4 py-2 outline-none focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10"
               />
             </div>
 
@@ -384,7 +406,7 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
               {products.StockData.map((stock, index) => (
                 <div
                   key={index}
-                  className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 border-t pt-2"
+                  className="grid min-w-0 grid-cols-1 gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 sm:grid-cols-2 lg:grid-cols-4"
                 >
                   <input
                     type="text"
@@ -395,7 +417,7 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
                       setProducts({ ...products, StockData: newStock });
                     }}
                     placeholder="Descripción"
-                    className="w-full px-2 py-2 border rounded-md focus:ring-2 focus:ring-blue-400"
+                    className="min-h-11 min-w-0 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 outline-none focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10"
                   />
 
                   <input
@@ -407,7 +429,7 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
                       setProducts({ ...products, StockData: newStock });
                     }}
                     placeholder="Stock"
-                    className="w-full px-2 py-2 border rounded-md focus:ring-2 focus:ring-blue-400"
+                    className="min-h-11 min-w-0 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 outline-none focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10"
                   />
 
                   <input
@@ -418,8 +440,9 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
                       newStock[index].Saleprice = Number(e.target.value);
                       setProducts({ ...products, StockData: newStock });
                     }}
-                    placeholder="Precio venta"
-                    className="w-full px-2 py-2 border rounded-md focus:ring-2 focus:ring-blue-400"
+                    placeholder="Precio de venta (IVA incluido)"
+                    aria-label="Precio de venta con IVA incluido"
+                    className="min-h-11 min-w-0 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 outline-none focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10"
                   />
 
                   <input
@@ -431,40 +454,41 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
                       setProducts({ ...products, StockData: newStock });
                     }}
                     placeholder="Precio compra"
-                    className="w-full px-2 py-2 border rounded-md focus:ring-2 focus:ring-blue-400"
+                    className="min-h-11 min-w-0 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 outline-none focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10"
                   />
                 </div>
               ))}
             </div>
 
             {/* Botones variantes */}
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <div className="flex flex-col justify-center gap-3 sm:flex-row">
               <button
                 type="button"
                 onClick={addInput}
-                className={styles.buttonfacturar}
+                className="min-h-11 w-full rounded-xl border border-[#007782]/30 bg-white px-4 py-2.5 font-bold text-[#007782] hover:bg-[#007782]/5 sm:w-auto"
               >
                 Añadir variante
               </button>
               <button
                 type="button"
                 onClick={removeInput}
-                className={styles.removeButton}
+                disabled={products.StockData.length <= 1}
+                className="min-h-11 w-full rounded-xl border border-red-200 bg-white px-4 py-2.5 font-bold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
               >
                 Eliminar variante
               </button>
             </div>
 
             {/* Botón Guardar */}
-            <div className="flex justify-center">
+            <div className="flex justify-center border-t border-slate-200 pt-5">
               <button
                 type="submit"
-                className={`${styles.buttonAgregarCliente} ${
+                className={`min-h-12 rounded-xl bg-[#c70063] px-8 py-3 font-bold text-white hover:bg-[#a90054] ${
                   !isFormValid() ? "opacity-50 cursor-not-allowed" : ""
                 }`}
-                disabled={!isFormValid()}
+                disabled={!isFormValid() || isCreating || isUpdating}
               >
-                Guardar producto
+                {isCreating || isUpdating ? "Guardando…" : onEdit ? "Actualizar producto" : "Crear producto"}
               </button>
             </div>
           </form>
@@ -477,6 +501,16 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
           onCreated={(newCategoryId: number) => {
             setProducts({ ...products, ID_Category: newCategoryId });
             setOpenCategoryModal(false);
+          }}
+        />
+      )}
+
+      {openSubCategoryModal && (
+        <ModalSubCategory
+          onClose={() => setOpenSubCategoryModal(false)}
+          onCreated={(newSubCategoryId: number) => {
+            setProducts({ ...products, ID_SubCategory: newSubCategoryId });
+            setOpenSubCategoryModal(false);
           }}
         />
       )}

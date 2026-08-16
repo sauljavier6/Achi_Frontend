@@ -1,96 +1,29 @@
-import { FaCashRegister, FaShoppingCart, FaUsers, FaBoxOpen } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import { ArrowRight, Boxes, CircleDollarSign, ClipboardList, PackagePlus, ShoppingBag, Store, Users, WalletCards } from "lucide-react";
+import { Link } from "react-router-dom";
+import { getAuthUser } from "../utils/auth";
 
-const DashboardPage = () => {
-  const navigate = useNavigate();
-  return (
-    <div className="sm:p-6 bg-gray-50 dark:bg-gray-900 min-h-screen rounded-lg">
-      <h1 className="text-3xl font-bold mb-6 text-gray-800 dark:text-gray-200">Dashboard POS</h1>
+const actions = [
+  { label: "Nueva venta", description: "Registra productos y cobra una venta", to: "/pos/cajas", icon: CircleDollarSign, featured: true },
+  { label: "Productos", description: "Consulta existencias y presentaciones", to: "/pos/productos", icon: Boxes },
+  { label: "Pedidos web", description: "Revisa compras recibidas en línea", to: "/pos/pedidos", icon: Store },
+  { label: "Cotizaciones", description: "Prepara y consulta cotizaciones", to: "/pos/cotizaciones", icon: ClipboardList },
+  { label: "Clientes", description: "Consulta el directorio de clientes", to: "/pos/clientes", icon: Users },
+  { label: "Compras y gastos", description: "Registra entradas y movimientos", to: "/pos/compras", icon: ShoppingBag },
+];
 
-      {/* Tarjetas rápidas */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-4 flex items-center">
-          <div className="bg-blue-500 text-white p-3 rounded-full">
-            <FaCashRegister size={24} />
-          </div>
-          <div className="ml-4">
-            <p className="text-gray-500 dark:text-gray-400 text-sm">Ventas Hoy</p>
-            
-          </div>
-        </div>
+export default function DashboardPage() {
+  const user = getAuthUser();
+  return <div className="space-y-6">
+    <section className="overflow-hidden rounded-3xl bg-primary p-6 text-white shadow-lg sm:p-8">
+      <div className="relative z-10 max-w-2xl"><p className="text-sm font-bold uppercase tracking-widest text-primary-fixed">Panel administrativo</p><h1 className="mt-2 text-3xl font-extrabold sm:text-4xl">Hola, {user?.Name?.split(" ")[0] || "equipo"}</h1><p className="mt-3 max-w-xl text-white/75">¿Qué necesitas hacer hoy? Usa los accesos rápidos para llegar directamente a las tareas más frecuentes.</p></div>
+    </section>
 
-        <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-4 flex items-center">
-          <div className="bg-green-500 text-white p-3 rounded-full">
-            <FaShoppingCart size={24} />
-          </div>
-          <div className="ml-4">
-            <p className="text-gray-500 dark:text-gray-400 text-sm">Pedidos</p>
-            
-          </div>
-        </div>
+    <section><div className="mb-4"><h2 className="text-2xl font-extrabold">Acciones rápidas</h2><p className="mt-1 text-sm text-on-surface-variant">Las funciones principales de tu operación.</p></div><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{actions.map(({ icon: Icon, featured, ...action }) => <Link key={action.to + action.label} to={action.to} className={`group flex min-h-36 flex-col rounded-3xl border p-5 transition hover:-translate-y-0.5 hover:shadow-lg ${featured ? "border-primary bg-primary text-white" : "border-black/5 bg-white hover:border-primary/25"}`}><span className={`mb-5 flex h-11 w-11 items-center justify-center rounded-2xl ${featured ? "bg-white/15" : "bg-primary-fixed text-primary"}`}><Icon size={22} /></span><div className="mt-auto flex items-end gap-3"><div className="flex-1"><h3 className="font-extrabold">{action.label}</h3><p className={`mt-1 text-sm ${featured ? "text-white/70" : "text-on-surface-variant"}`}>{action.description}</p></div><ArrowRight className="transition group-hover:translate-x-1" size={20} /></div></Link>)}</div></section>
 
-        <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-4 flex items-center">
-          <div className="bg-yellow-500 text-white p-3 rounded-full">
-            <FaUsers size={24} />
-          </div>
-          <div className="ml-4">
-            <p className="text-gray-500 dark:text-gray-400 text-sm">Clientes</p>
-            
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-4 flex items-center">
-          <div className="bg-red-500 text-white p-3 rounded-full">
-            <FaBoxOpen size={24} />
-          </div>
-          <div className="ml-4">
-            <p className="text-gray-500 dark:text-gray-400 text-sm">Inventario</p>
-            
-          </div>
-        </div>
-      </div>
-
-      {/* Gráfica de ventas (placeholder) */}
-      <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 mb-8">
-        <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">Ventas Semanales</h2>
-        <div className="h-48 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center text-gray-500 dark:text-gray-300">
-          {/* Aquí puedes poner un chart, ejemplo: Chart.js o Recharts */}
-          Gráfico de ventas
-        </div>
-      </div>
-
-        {/* Accesos rápidos */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div
-            className="bg-blue-500 text-white p-4 rounded-lg text-center cursor-pointer hover:bg-blue-600 transition"
-            onClick={() => navigate("/pos/productos")}
-          >
-            <p className="text-lg font-semibold">Productos</p>
-          </div>
-
-          <div
-            className="bg-green-500 text-white p-4 rounded-lg text-center cursor-pointer hover:bg-green-600 transition"
-            onClick={() => navigate("/pos/ventas")}
-          >
-            <p className="text-lg font-semibold">Ventas</p>
-          </div>
-
-          <div
-            className="bg-yellow-500 text-white p-4 rounded-lg text-center cursor-pointer hover:bg-yellow-600 transition"
-            onClick={() => navigate("/pos/clientes")}
-          >
-            <p className="text-lg font-semibold">Clientes</p>
-          </div>
-
-          <div
-            className="bg-red-500 text-white p-4 rounded-lg text-center cursor-pointer hover:bg-red-600 transition"
-            onClick={() => navigate("/pos/proveedores")}
-          >
-            <p className="text-lg font-semibold">Proveedores</p>
-          </div>
-        </div>
-    </div>
-  );
-};
-
-export default DashboardPage;
+    <section className="grid gap-4 md:grid-cols-3">
+      <Link to="/pos/cajas" className="flex items-center gap-4 rounded-2xl bg-white p-5 shadow-sm"><WalletCards className="text-secondary" /><div><strong className="block">Caja</strong><span className="text-sm text-on-surface-variant">Abrir, operar o consultar cortes</span></div></Link>
+      <Link to="/pos/productos" className="flex items-center gap-4 rounded-2xl bg-white p-5 shadow-sm"><PackagePlus className="text-secondary" /><div><strong className="block">Inventario</strong><span className="text-sm text-on-surface-variant">Mantener existencias actualizadas</span></div></Link>
+      <Link to="/pos/ventas" className="flex items-center gap-4 rounded-2xl bg-white p-5 shadow-sm"><CircleDollarSign className="text-secondary" /><div><strong className="block">Historial de ventas</strong><span className="text-sm text-on-surface-variant">Consultar pagos y movimientos</span></div></Link>
+    </section>
+  </div>;
+}

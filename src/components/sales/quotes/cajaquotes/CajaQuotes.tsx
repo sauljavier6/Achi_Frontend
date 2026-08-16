@@ -1,15 +1,13 @@
-import { useEffect, useState } from "react";
-import styles from "./CajaQuotes.module.scss";
+import { useEffect, useRef, useState } from "react";
 import ModalCustomers from "../../../sales/customers/modalcustomers/ModalCustomers";
 import { postCustomerSale, searchProducts } from "../../../../api/Post/SaleApi/SaleApi";
 import { useQuery } from "@tanstack/react-query";
 import { useMutation, useQueryClient  } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
-import { getStates } from "../../../../api/Post/StateApi/StateApi";
-import { getPayments } from "../../../../api/Post/PaymentApi/PaymentApi";
-import { sendCotizacion } from "../../../../api/Post/TicketApi/TicketApi";
+import { openTicket, sendCotizacion } from "../../../../api/Post/TicketApi/TicketApi";
 import { getQuoteById, postQuote, updateQuote } from "../../../../api/Post/QuotesApi/QuotesApi";
 import { getAuthUser } from "../../../../utils/auth";
+import { lineTotal, numericValue, taxRate, useSaleProducts } from "../../../../utils/saleSummary";
 
 interface SaleProduct {
   id: number;
@@ -30,13 +28,6 @@ interface SaleItem {
   subtotal: number;
 }
 
-interface PaymentSale {
-  ID_Payment: number;
-  Description: string;
-  Monto: number;
-  ReferenceNumber: string;
-}
-
 interface SaleData {
   ID_User: number;
   Total: number;
@@ -44,7 +35,6 @@ interface SaleData {
   Subtotal: number;
   Iva: number;
   ID_State: number;
-  Payment: PaymentSale[];
   ID_Operador: number;
   Lote: string;
   items: SaleItem[];
@@ -68,21 +58,15 @@ interface CajasProps {
   export default function CajasQuotes({ ID_Sale }: CajasProps) {
     const [search, setSearch] = useState('');
     const [debounced, setDebounced] = useState(search);
-    const [products, setProducts] = useState<SaleProduct[]>([]);
+    const [products, setProducts, saleSummary] = useSaleProducts<SaleProduct>();
     const [customerData, setCustomerData] = useState<CustomerFormData | null>(null);
-    const [selectedState, setSelectedState] = useState(2);
-    const [selectedPayment, setSelectedPayment] = useState<PaymentSale[]>([]);
     const [idSale, setIdSale] = useState<number | null>(null);
-    const [paymentMethod, setPaymentMethod] = useState("");
-    const [amount, setAmount] = useState("");
-    const [reference, setReference] = useState("");
     const [selectedProductsDelete, setSelectedProductsDelete] = useState<number[]>([]);
     const allSelected = products.length > 0 && products.every((p) => selectedProductsDelete.includes(p.id));
     const [modalOpen, setModalOpen] = useState(false);
+    const saveLockRef = useRef(false);
 
-    const subtotal = products.reduce((sum, p) => sum + p.price * p.quantity, 0);
-    const iva = products.reduce((sum, p) => sum + (p.price * p.quantity * p.iva), 0);
-    const total = subtotal + iva;
+    const { itemCount, subtotal, iva, total } = saleSummary;
 
     const usuario = getAuthUser();
     const idusuario = usuario?.ID_User;
@@ -93,19 +77,18 @@ interface CajasProps {
           try {
             const datasale = await getQuoteById(ID_Sale);
             const data = datasale.data;
-            console.log(data)
-            //estado para el cliente
-            setCustomerData(data?.user);
+            setCustomerData(data?.user ?? null);
+            setIdSale(data.ID_Sale);
 
             //estado para los productos
             const mappedProducts: SaleProduct[] = data.SaleProduct.map((item: any) => ({
               id: item.Stock?.ID_Stock,
-              maxAmount: item.Stock?.Amount,
+              maxAmount: Number(item.Stock?.Amount ?? 0),
               productId: item.ID_Product,
               name: item.Product.Description + ' - ' + item.Stock.Description,
-              quantity: item.Quantity,
-              price: item.Saleprice,
-              iva: item.Product.Iva.Iva,
+              quantity: numericValue(item.Quantity),
+              price: numericValue(item.Saleprice),
+              iva: taxRate(item.Product?.Iva?.Iva),
             }));
             setProducts(mappedProducts);
 
@@ -130,19 +113,9 @@ interface CajasProps {
       enabled: debounced.length > 0,
     });
 
-    const { data: states } = useQuery({
-      queryKey: ['states'],
-      queryFn: getStates,
-    });
-
-    const { data: paymentsData } = useQuery({
-      queryKey: ['payments'],
-      queryFn: getPayments,
-    });
-
     const queryClient = useQueryClient();
 
-    const { mutate } = useMutation({
+    const { mutate: createQuote, isPending: isCreating } = useMutation({
       mutationFn: postQuote,
       onError: (error) => {
           toast.error(`${error.message}`, {
@@ -151,21 +124,20 @@ interface CajasProps {
       },
       onSuccess: (data) => {
           setIdSale(data.data.ID_Sale)
-          setCustomerData(null);
-          setProducts([]);
-          setSelectedPayment([])
-          setPaymentMethod("");
-          setAmount("");
-          setReference("");
-          toast.success("Cotización registrada con éxito", {
+          setProducts((current) => current.map((product) => {
+            const saved = data.data.items?.find((item: any) => Number(item.ID_Stock) === product.id);
+            return saved ? { ...product, price: Number(saved.Saleprice) } : product;
+          }));
+          toast.success("Cotización creada correctamente", {
           position: "top-right",
           progressClassName: "custom-progress",
           });
-          queryClient.invalidateQueries({ queryKey: ['sale'] });
+          queryClient.invalidateQueries({ queryKey: ['quotes'] });
       },
+      onSettled: () => { saveLockRef.current = false; },
     });
 
-    const { mutate: mutateEditSale } = useMutation({
+    const { mutate: editQuote, isPending: isUpdating } = useMutation({
       mutationFn: updateQuote,
       onError: (error) => {
           toast.error(`${error.message}`, {
@@ -174,18 +146,17 @@ interface CajasProps {
       },
       onSuccess: (data) => {
           setIdSale(data.data.ID_Sale)
-          setCustomerData(null);
-          setProducts([]);
-          setSelectedPayment([])
-          setPaymentMethod("");
-          setAmount("");
-          setReference("");
-          toast.success("Venta completada con éxito", {
+          setProducts((current) => current.map((product) => {
+            const saved = data.data.items?.find((item: any) => Number(item.ID_Stock) === product.id);
+            return saved ? { ...product, price: Number(saved.Saleprice) } : product;
+          }));
+          toast.success("Cotización actualizada correctamente", {
           position: "top-right",
           progressClassName: "custom-progress",
           });
-          queryClient.invalidateQueries({ queryKey: ['sale'] });
+          queryClient.invalidateQueries({ queryKey: ['quotes'] });
       },
+      onSettled: () => { saveLockRef.current = false; },
     });
 
     const { mutate: customerCreateMutate } = useMutation({
@@ -197,7 +168,7 @@ interface CajasProps {
       },
       onSuccess: (data) => {
           setCustomerData(data.data);
-          toast.success("Cliente registrado con éxito", {
+          toast.success("Cliente creado y asignado a la cotización", {
           position: "top-right",
           progressClassName: "custom-progress",
           });
@@ -213,7 +184,7 @@ interface CajasProps {
           });
       },
       onSuccess: () => {
-          toast.success("Cotizacion enviada con éxito", {
+          toast.success("Cotización enviada por correo correctamente", {
           position: "top-right",
           progressClassName: "custom-progress",
           });
@@ -221,9 +192,18 @@ interface CajasProps {
       },
     });
 
-    const handleSaveSale = async () => {
+    const handleSaveSale = () => {
+      if (saveLockRef.current || isCreating || isUpdating) return;
+      if (!idusuario) {
+        toast.error("No se pudo identificar al operador. Inicia sesión nuevamente.");
+        return;
+      }
       if (products.length === 0) {
-        alert("Debes seleccionar productos para completar la venta.");
+        toast.error("Agrega al menos un producto a la cotización.");
+        return;
+      }
+      if (products.some((product) => !Number.isInteger(product.quantity) || product.quantity < 1 || product.quantity > product.maxAmount)) {
+        toast.error("Revisa las cantidades: deben ser enteras y no superar el stock disponible.");
         return;
       }
 
@@ -234,15 +214,9 @@ interface CajasProps {
         Balance_Total: total,
         Subtotal: subtotal,
         Iva: iva,
-        ID_State: selectedState,
+        ID_State: 1,
         ID_Operador: Number(idusuario),
         Lote: '',
-        Payment: selectedPayment.map(p => ({
-          ID_Payment: p.ID_Payment,
-          Description: p.Description,
-          Monto: p.Monto,
-          ReferenceNumber: p.ReferenceNumber,
-        })),
         items: products.map(p => ({
           productId: p.productId,
           stockId: p.id,
@@ -252,14 +226,23 @@ interface CajasProps {
         })),
       };
 
+      // El ref bloquea de forma síncrona incluso dos clics ocurridos antes
+      // de que React alcance a renderizar el estado isPending.
+      saveLockRef.current = true;
+
       if (ID_Sale) {
         // Modo edición
         console.log('dentro de edicion')
-        await mutateEditSale(saleData);
+        editQuote(saleData);
       } else {
-        await mutate(saleData);
+        createQuote(saleData);
       }
     };
+
+    const hasValidProducts = products.length > 0 && products.every(
+      (product) => Number.isInteger(product.quantity) && product.quantity >= 1 && product.quantity <= product.maxAmount,
+    );
+    const canSaveQuote = Boolean(idusuario) && hasValidProducts && !isCreating && !isUpdating;
 
     const handleCreateCustomer = () => {
       setModalOpen(true);
@@ -268,76 +251,48 @@ interface CajasProps {
     const handleSaveCustomer = (data: CustomerFormData) => {
       setIdSale(null);
       if (data.ID_User != null) {
-        console.log("guardando cliente", data);
         setCustomerData(data);
       } else {
-        console.log("Creando nuevo cliente", data);
         customerCreateMutate(data);
       }
     };
 
-    const handleAddPayment = () => {
-      setIdSale(null);
-      if (!paymentMethod || !amount) return;
-
-      const selectedPaymentData = paymentsData.data.find(
-        (p: PaymentSale) => p.ID_Payment === Number(paymentMethod)
-      );
-
-      setSelectedPayment((prev) => [
-        ...prev,
-        {
-          ID_Payment: Number(paymentMethod),
-          Description: selectedPaymentData?.Description || "",
-          Monto: parseFloat(amount),
-          ReferenceNumber: reference || "",
-        },
-      ]);
-
-      // Limpiar campos
-      setPaymentMethod("");
-      setAmount("");
-      setReference("");
-    };
-
-    const handleDeletePayment = (index: number) => {
-      setSelectedPayment((prev) => prev.filter((_, i) => i !== index));
-    };
-
     const handleImpresTicket = async () => {
       try {
-        window.open(`${import.meta.env.VITE_API_URL}/ticket/Cotizacion/${idSale}`, "_blank");
+        if (idSale) await openTicket(idSale, true);
       } catch (error) {
         console.error("Error al imprimir el ticket:", error);
       }
     };
 
     const handleSendTicket = () => {
-      console.log("Imprimir ticket", idSale);
       if (idSale !== null) {
         sendTiket(idSale);
       }
     };
 
     return (
-      <div className="p-6 bg-white rounded-xl shadow-md max-w-3xl mx-auto">
-        <div className="mb-4 relative">
-          <div className="flex justify-between items-center">
+      <div className="w-full min-w-0">
+        <div className="mb-6"><p className="text-sm font-semibold text-[#c70063]">Ventas</p><h2 className="text-xl font-bold text-slate-900">{ID_Sale ? "Editar cotización" : "Nueva cotización"}</h2><p className="text-sm text-slate-500">Agrega productos, cliente y condiciones de la propuesta.</p></div>
+        <div className="relative mb-5 rounded-2xl border border-slate-200 p-4"><p className="mb-3 text-xs font-bold uppercase tracking-wide text-[#c70063]">Paso 1 · Productos</p>
+          <div className="flex flex-col gap-2 sm:flex-row">
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar producto..."
-              className="border rounded px-3 py-2 w-full mr-2"
+              className="min-h-11 w-full rounded-xl border border-slate-300 px-4 outline-none focus:border-[#c70063] focus:ring-4 focus:ring-[#c70063]/10"
             />
             <button
               onClick={() => {
+                setIdSale(null);
                 setProducts((prev) =>
                   prev.filter((p) => !selectedProductsDelete.includes(p.id))
                 );
                 setSelectedProductsDelete([]);
               }}
-              className={styles.removeButton}
+              disabled={selectedProductsDelete.length === 0}
+              className="rounded-xl border border-red-200 px-4 py-2.5 font-semibold text-red-600 hover:bg-red-50 disabled:opacity-40"
             >
               Quitar
             </button>
@@ -379,10 +334,10 @@ interface CajasProps {
                               productId: product.ID_Product,
                               name: `${product.Description} - ${variant.Description}`,
                               quantity: 1,
-                              price: variant.Saleprice,
+                              price: numericValue(variant.Saleprice),
                               maxAmount: variant.Amount,
                               stockVariant: variant.Description,
-                              iva: product.Iva.Iva,
+                              iva: taxRate(product.Iva?.Iva),
                             }
                           ];
                         } else {
@@ -410,8 +365,8 @@ interface CajasProps {
           )}
         </div>
 
-        <div className="border rounded p-4 mb-4 overflow-x-auto">
-          <h3 className="font-semibold mb-2">Productos en venta</h3>
+        <div translate="no" className="notranslate mb-5 overflow-x-auto rounded-2xl border border-slate-200 p-3 sm:p-4">
+          <div className="mb-3 flex items-center justify-between gap-3"><h3 className="font-bold text-slate-900">Productos cotizados</h3><span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">{`${itemCount} artículos`}</span></div>
 
           {/* Vista tabla en pantallas medianas y grandes */}
           <table className="hidden sm:table w-full text-sm">
@@ -460,9 +415,10 @@ interface CajasProps {
                       value={p.quantity}
                       onChange={(e) => {
                         const newQuantity = parseInt(e.target.value);
+                        setIdSale(null);
                         setProducts((prev) =>
                           prev.map((item) =>
-                            item.id === p.id ? { ...item, quantity: newQuantity } : item
+                            item.id === p.id ? { ...item, quantity: Number.isNaN(newQuantity) ? 0 : Math.min(newQuantity, item.maxAmount) } : item
                           )
                         );
                       }}
@@ -470,7 +426,7 @@ interface CajasProps {
                     />
                   </td>
                   <td className="text-center">${p.price}</td>
-                  <td className="text-center">${(p.price * p.quantity).toFixed(2)}</td>
+                  <td className="text-center">${lineTotal(p).toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>
@@ -509,9 +465,10 @@ interface CajasProps {
                     value={p.quantity}
                     onChange={(e) => {
                       const newQuantity = parseInt(e.target.value);
+                      setIdSale(null);
                       setProducts((prev) =>
                         prev.map((item) =>
-                          item.id === p.id ? { ...item, quantity: newQuantity } : item
+                          item.id === p.id ? { ...item, quantity: Number.isNaN(newQuantity) ? 0 : Math.min(newQuantity, item.maxAmount) } : item
                         )
                       );
                     }}
@@ -522,7 +479,7 @@ interface CajasProps {
                 <div className="flex justify-between items-center pt-2">
                   <span className="font-medium">Subtotal:</span>
                   <span className="text-green-600 font-semibold">
-                    ${(p.price * p.quantity).toFixed(2)}
+                    ${lineTotal(p).toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -530,178 +487,48 @@ interface CajasProps {
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-wrap md:flex-row justify-between items-start md:items-center gap-4 mb-4">
-          <div className="text-sm w-full md:flex-1 md:min-w-[200px]">
-            <p>Subtotal: ${subtotal.toFixed(2)}</p>
-            <p>IVA: ${iva.toFixed(2)}</p>
-            <p className="font-semibold">Total: ${total.toFixed(2)}</p>
+        <div translate="no" className="notranslate mb-5 grid gap-4 rounded-2xl bg-slate-50 p-4 sm:grid-cols-[1fr_auto] sm:items-center">
+          <div className="w-full text-sm text-slate-600">
+            <p className="flex justify-between gap-8"><span>Subtotal</span><span>{`$${subtotal.toFixed(2)}`}</span></p><p className="flex justify-between gap-8"><span>IVA</span><span>{`$${iva.toFixed(2)}`}</span></p><p className="mt-2 flex justify-between gap-8 border-t border-slate-200 pt-2 text-xl font-black text-slate-900"><span>Total</span><span>{`$${total.toFixed(2)}`}</span></p>
           </div>
-          <button onClick={handleCreateCustomer} className={styles.buttonAgregarCliente}>
-            + Agregar cliente
+          <button onClick={handleCreateCustomer} className="rounded-xl border border-[#007782]/30 bg-white px-4 py-2.5 font-semibold text-[#007782] hover:bg-[#007782]/5">
+            {customerData ? "Cambiar cliente" : "Asignar cliente"}
           </button>
         </div>
 
-        <div className="flex flex-col md:flex-row md:flex-wrap justify-between items-start md:items-center gap-4 mb-4">
-          {ID_Sale && (
-            <>
-              <div className="text-sm w-full md:flex-1 md:min-w-[200px]">
-                <select
-                  id="tipoPago"
-                  name="tipoPago"
-                  className="border rounded px-3 py-2 w-full"
-                  value={selectedState}
-                  onChange={(e) => setSelectedState(Number(e.target.value))}
-                >
-                  <option value="" disabled>
-                    Selecciona un estado
-                  </option>
+        {customerData && (
+          <div className="mb-5 flex items-start justify-between gap-3 rounded-2xl border border-[#007782]/20 bg-[#007782]/5 p-4">
+            <div className="min-w-0"><p className="text-xs font-bold uppercase tracking-wide text-[#007782]">Cliente asignado</p><p className="truncate font-bold text-slate-900">{customerData.Name}</p><p className="truncate text-sm text-slate-600">{customerData.Email}</p></div>
+            <button type="button" onClick={() => { setCustomerData(null); setIdSale(null); }} className="shrink-0 rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-white">Quitar</button>
+          </div>
+        )}
 
-                  {isLoading && <option>Cargando...</option>}
-
-                  {states?.map((state: any) => (
-                    <option key={state.ID_State} value={state.ID_State}>
-                      {state.Description}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="text-sm w-full md:flex-1 md:min-w-[200px]">
-                <select
-                  id="metodoPago"
-                  name="metodoPago"
-                  className="border rounded px-3 py-2 w-full"
-                  value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                >
-                  <option value="">Selecciona un método de pago</option>
-                  {paymentsData?.data?.map((payment: any) => (
-                    <option key={payment.ID_Payment} value={payment.ID_Payment}>
-                      {payment.Description}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </>
-          )}
+        <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          La cotización no reserva inventario ni registra pagos. Las existencias se validan nuevamente al convertirla en venta.
         </div>
 
-        {paymentMethod && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="paymentAmount" className="block text-sm font-medium text-gray-700">
-                Monto del pago
-              </label>
-              <input
-                type="number"
-                id="paymentAmount"
-                name="paymentAmount"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="Ej. 500.00"
-                className="w-full border rounded px-3 py-2"
-                required
-              />
-            </div>
-
-            <div>
-              <label htmlFor="reference" className="block text-sm font-medium text-gray-700">
-                Número de referencia/Notas
-              </label>
-              <input
-                type="text"
-                id="reference"
-                name="reference"
-                value={reference}
-                onChange={(e) => setReference(e.target.value)}
-                placeholder="Ej. #REF1234"
-                className="w-full border rounded px-3 py-2"
-              />
-            </div>
-
-            <div className="col-span-full">
-              <button
-                type="button"
-                onClick={handleAddPayment}
-                className="mt-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-              >
-                Agregar pago
-              </button>
-            </div>
-          </div>
-        )}
-
-        {selectedPayment.length > 0 && (
-          <div className="mt-6">
-            <h3 className="font-semibold mb-2">Pagos agregados:</h3>
-
-            <div className="hidden md:grid grid-cols-4 gap-4 font-semibold text-gray-700 border-b pb-1 mb-2">
-              <span>Método</span>
-              <span>Monto</span>
-              <span>Referencia</span>
-              <span>Acción</span>
-            </div>
-
-            <div className="space-y-2">
-              {selectedPayment.map((p, i) => (
-                <div
-                  key={i}
-                  className="grid md:grid-cols-4 gap-4 bg-gray-50 p-2 rounded border text-sm items-center"
-                >
-                  <div className="flex md:block justify-between">
-                    <span className="font-medium md:hidden">Método: </span>
-                    <span>{p.Description}</span>
-                  </div>
-
-                  <div className="flex md:block justify-between">
-                    <span className="font-medium md:hidden">Monto: </span>
-                    <span>${p.Monto.toFixed(2)}</span>
-                  </div>
-
-                  <div className="flex md:block justify-between">
-                    <span className="font-medium md:hidden">Referencia: </span>
-                    <span>{p.ReferenceNumber || "—"}</span>
-                  </div>
-
-                  <div className="flex md:block justify-between">
-                    <span className="font-medium md:hidden">Acción: </span>
-                    <button
-                      onClick={() => handleDeletePayment(i)}
-                      className="text-red-600 hover:underline"
-                    >
-                      Eliminar
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="flex flex-col sm:flex-row flex-wrap mt-10 gap-2 sm:justify-end w-full">
+        <div className="mt-6 grid w-full gap-2 border-t border-slate-200 pt-5 sm:grid-cols-[auto_auto_1fr]">
           <button
             onClick={handleImpresTicket}
-            className={`bg-green-600 text-white font-semibold py-2 px-4 rounded hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed`}
+            className="rounded-xl border border-slate-300 px-4 py-2.5 font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
             disabled={!idSale}
           >
             Imprimir Ticket
           </button>
           <button
             onClick={handleSendTicket}
-            className={`bg-yellow-500 text-white font-semibold py-2 px-4 rounded hover:bg-yellow-600 transition disabled:opacity-50 disabled:cursor-not-allowed`}
+            className="rounded-xl border border-slate-300 px-4 py-2.5 font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
             disabled={!idSale}
           >
             Enviar por correo
           </button>
-          <button onClick={handleSaveSale} className={styles.buttonAgregarCliente}>
-            Completar
+          <button disabled={!canSaveQuote} onClick={handleSaveSale} className="rounded-xl bg-[#c70063] px-5 py-3 font-bold text-white hover:bg-[#a90054] disabled:cursor-not-allowed disabled:opacity-60">
+            {isCreating || isUpdating ? "Guardando…" : ID_Sale ? "Actualizar cotización" : "Guardar cotización"}
           </button>
         </div>
 
         {modalOpen && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <ModalCustomers onClose={() => setModalOpen(false)} onSave={handleSaveCustomer} onEdit={customerData?.ID_User}/>
-          </div>
+          <ModalCustomers onClose={() => setModalOpen(false)} onSave={handleSaveCustomer} onEdit={customerData?.ID_User}/>
         )}
       </div>
     );

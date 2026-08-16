@@ -1,4 +1,4 @@
-const token = localStorage.getItem("token");
+const token = { toString: () => localStorage.getItem("token") || "" };
 
 export const getProductsCatalogoBanner = async ({ page = 1, limit = 10 }) => {
   const res = await fetch(

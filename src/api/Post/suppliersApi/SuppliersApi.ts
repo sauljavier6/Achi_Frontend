@@ -1,4 +1,4 @@
-const token = localStorage.getItem('token')
+const token = { toString: () => localStorage.getItem('token') || '' }
 
 interface Suppliers { 
   Name: string;
@@ -96,14 +96,15 @@ export const updateSupplier = async (supplierData: SuppliersWithId) => {
 };
 
 export const getSupplier = async (email: string) => {
-  console.log('correo',email)
-  const res = await fetch(`${import.meta.env.VITE_API_URL}/supplier/search?email=${email}`, {
+  const res = await fetch(`${import.meta.env.VITE_API_URL}/supplier/search?email=${encodeURIComponent(email)}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     }
   });
+
+  if (res.status === 404) return { data: null };
 
   if (!res.ok) {
     const error = await res.json();

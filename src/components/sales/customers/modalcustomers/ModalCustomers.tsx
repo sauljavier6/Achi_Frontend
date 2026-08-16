@@ -21,6 +21,8 @@ interface ModalCustomersProps {
 
 const ModalCustomers = ({ onClose, onSave, onEdit }: ModalCustomersProps) => {
   const [activeTab, setActiveTab] = useState<"personal" | "facturacion">("personal");
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const [emailMessage, setEmailMessage] = useState("");
   const [user, setUser] = useState<CustomerFormData>({
     ID_User: undefined,
     Name: "",
@@ -36,7 +38,6 @@ const ModalCustomers = ({ onClose, onSave, onEdit }: ModalCustomersProps) => {
     const fetchCustomer = async (id: number) => {
       try {
         const customerData = await getCustomerByID_User(id);
-        console.log("customerData", customerData);
           setUser((prev) => ({
             ...prev,
             ID_User: customerData.data.ID_User,
@@ -59,67 +60,50 @@ const ModalCustomers = ({ onClose, onSave, onEdit }: ModalCustomersProps) => {
   }, [onEdit]);
 
 
-  useEffect(() => {
-    const fetchCustomer = async () => {
-      try {
-        const email = user?.Email?.trim();
+  const handleEmailBlur = async () => {
+    const email = user.Email.trim().toLowerCase();
+    if (onEdit !== undefined || !email || !/^\S+@\S+\.\S+$/.test(email)) return;
 
-        if (!email) {
-          resetUser(email);
-          return;
-        }
-
-        const customerData = await getCustomerSale(email);
-        const data = customerData?.data;
-
-        if (data) {
-          setUser(prev => ({
-            ...prev,
-            ID_User: data.ID_User,
-            Name: data.Name || "",
-            Phone: data.Phone?.Description || "",
-            Email: data.Email?.Description || email,
-            RazonSocial: data.Facturacion?.RazonSocial || "",
-            CodigoPostal: data.Facturacion?.CodigoPostal || "",
-            Rfc: data.Facturacion?.Rfc || "",
-            RegimenFiscal: data.Facturacion?.RegimenFiscal || "",
-          }));
-        } else {
-          resetUser(email);
-        }
-
-      } catch (error) {
-        console.error("Error fetching customer data:", error);
-        resetUser(user?.Email?.trim());
+    setIsCheckingEmail(true);
+    setEmailMessage("");
+    try {
+      const customerData = await getCustomerSale(email);
+      const data = customerData?.data;
+      if (!data) {
+        setUser((prev) => ({ ...prev, Email: email, ID_User: undefined }));
+        setEmailMessage("Correo disponible para un cliente nuevo.");
+        return;
       }
-    };
 
-    const resetUser = (email = "") => {
-      setUser(prev => ({
+      setUser((prev) => ({
         ...prev,
-        ID_User: undefined,
-        Name: "",
-        Phone: "",
-        Email: email,
-        RazonSocial: "",
-        CodigoPostal: "",
-        Rfc: "",
-        RegimenFiscal: ""
+        ID_User: data.ID_User,
+        Name: data.Name || prev.Name,
+        Phone: data.Phone?.Description || prev.Phone,
+        Email: data.Email?.Description || email,
+        RazonSocial: data.Facturacion?.RazonSocial || "",
+        CodigoPostal: data.Facturacion?.CodigoPostal || "",
+        Rfc: data.Facturacion?.Rfc || "",
+        RegimenFiscal: data.Facturacion?.RegimenFiscal || "",
       }));
-    };
-
-    fetchCustomer();
-  }, [user?.Email]);
+      setEmailMessage("Cliente existente encontrado; cargamos sus datos.");
+    } catch (error) {
+      console.error("Error verificando el correo del cliente:", error);
+      setEmailMessage("No pudimos verificar el correo. Puedes continuar y volver a intentar.");
+    } finally {
+      setIsCheckingEmail(false);
+    }
+  };
 
   const isPersonalDataComplete = user.Name.trim() !== "" && user.Phone.trim() !== "" && user.Email.trim() !== "";
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-2">
-      <div className="bg-white rounded-xl shadow-xl p-4 sm:p-6 w-full max-w-[95%] sm:max-w-md lg:max-w-lg">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-3 sm:items-center">
+      <div className="w-full max-w-xl rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
         {/* Header */}
         <div className="flex justify-between items-center border-b pb-3 mb-4">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-800">Crear Cliente</h2>
-          <button onClick={onClose} className="p-2 rounded hover:bg-gray-100">
+          <div><p className="text-sm font-semibold text-[#c70063]">Clientes</p><h2 className="text-lg font-bold text-slate-900 sm:text-xl">{onEdit ? "Editar cliente" : "Nuevo cliente"}</h2></div>
+          <button type="button" onClick={onClose} aria-label="Cerrar modal" className="p-2 rounded-full hover:bg-gray-100">
             <img src="/icons/close.png" alt="Cerrar" className="w-5 h-5" />
           </button>
         </div>
@@ -166,12 +150,16 @@ const ModalCustomers = ({ onClose, onSave, onEdit }: ModalCustomersProps) => {
                   type="email"
                   value={user.Email}
                   onChange={(event) =>
-                    setUser((prev) => ({ ...prev, Email: event.target.value }))
+                    setUser((prev) => ({ ...prev, Email: event.target.value, ID_User: onEdit === undefined ? undefined : prev.ID_User }))
                   }
-                  placeholder="Correo"
+                  onBlur={handleEmailBlur}
+                  placeholder="cliente@correo.com"
+                  autoComplete="email"
                   required
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                 />
+                {isCheckingEmail && <p className="mt-1 text-xs text-slate-500">Verificando correo…</p>}
+                {!isCheckingEmail && emailMessage && <p className="mt-1 text-xs text-slate-600">{emailMessage}</p>}
               </div>
 
               {/* Nombre */}
@@ -186,7 +174,8 @@ const ModalCustomers = ({ onClose, onSave, onEdit }: ModalCustomersProps) => {
                   onChange={(event) =>
                     setUser((prev) => ({ ...prev, Name: event.target.value }))
                   }
-                  placeholder="Nombre del cliente"
+                  placeholder="Nombre completo"
+                  autoComplete="name"
                   required
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                 />
@@ -212,6 +201,7 @@ const ModalCustomers = ({ onClose, onSave, onEdit }: ModalCustomersProps) => {
                   minLength={10}
                   maxLength={10}
                   inputMode="numeric"
+                  autoComplete="tel"
                   pattern="[0-9]{10}"
                   title="Debe contener exactamente 10 dígitos numéricos"
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
@@ -248,10 +238,13 @@ const ModalCustomers = ({ onClose, onSave, onEdit }: ModalCustomersProps) => {
                   id="codigopostalCliente"
                   type="text"
                   value={user.CodigoPostal}
-                  onChange={(event) =>
-                    setUser((prev) => ({ ...prev, CodigoPostal: event.target.value }))
-                  }
+                  onChange={(event) => setUser((prev) => ({
+                    ...prev,
+                    CodigoPostal: event.target.value.replace(/\D/g, "").slice(0, 5)
+                  }))}
                   placeholder="Código postal"
+                  inputMode="numeric"
+                  maxLength={5}
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                 />
               </div>
@@ -265,10 +258,12 @@ const ModalCustomers = ({ onClose, onSave, onEdit }: ModalCustomersProps) => {
                   id="rfcCliente"
                   type="text"
                   value={user.Rfc}
-                  onChange={(event) =>
-                    setUser((prev) => ({ ...prev, Rfc: event.target.value }))
-                  }
+                  onChange={(event) => setUser((prev) => ({
+                    ...prev,
+                    Rfc: event.target.value.toUpperCase().replace(/[^A-ZÑ&0-9]/g, "").slice(0, 13)
+                  }))}
                   placeholder="RFC"
+                  maxLength={13}
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                 />
               </div>
@@ -301,13 +296,13 @@ const ModalCustomers = ({ onClose, onSave, onEdit }: ModalCustomersProps) => {
           )}
 
           {/* Botón */}
-          <div className="flex justify-center mt-6">
+          <div className="mt-6 flex justify-end">
             <button
               type="submit"
               className={`${styles.submitButton} ${
-                !isPersonalDataComplete ? "opacity-50 cursor-not-allowed" : ""
+                !isPersonalDataComplete || isCheckingEmail ? "opacity-50 cursor-not-allowed" : ""
               }`}
-              disabled={!isPersonalDataComplete}
+              disabled={!isPersonalDataComplete || isCheckingEmail}
             >
               Guardar cliente
             </button>

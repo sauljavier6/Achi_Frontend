@@ -25,7 +25,7 @@ interface ProductInput {
   Imagenes: ProductImage[];
 }
 
-const token = localStorage.getItem("token");
+const token = { toString: () => localStorage.getItem("token") || "" };
 
 export const getProducts = async ({
   page = 1,
@@ -59,6 +59,7 @@ export const postProduct = async (productData: ProductInput) => {
   formData.append("ID_SubCategory", productData.ID_SubCategory.toString());
   formData.append("StockData", JSON.stringify(productData.StockData));
   formData.append("ID_Iva", JSON.stringify(productData.ID_Iva));
+  formData.append("State", productData.State === false ? "false" : "true");
 
   // imágenes
   productData.Imagenes.forEach((imgObj: ProductImage) => {

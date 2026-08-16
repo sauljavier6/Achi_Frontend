@@ -49,7 +49,7 @@ const CatalogoProducts = () => {
       getProductsCatalog({
         page,
         limit,
-        category: selectedCategory ? String(selectedCategory) : null,
+        category: selectedCategory,
         minPrice,
         maxPrice,
         sortBy,

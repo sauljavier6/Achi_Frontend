@@ -1,4 +1,4 @@
-const token = localStorage.getItem('token')
+const token = { toString: () => localStorage.getItem('token') || '' }
 
 export interface IRetiroForm {
   Description: string;

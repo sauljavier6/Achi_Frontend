@@ -1,529 +1,156 @@
-import { useEffect, useState } from "react";
-import styles from "./CajasPays.module.scss";
-import ModalCustomers from "../../sales/customers/modalcustomers/ModalCustomers";
-import {
-  getSaleById,
-  postCustomerWithSale,
-  postPaymentSale,
-  putCustomerSale,
-} from "../../../api/Post/SaleApi/SaleApi";
-import { useQuery } from "@tanstack/react-query";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-toastify";
+import ModalCustomers from "../customers/modalcustomers/ModalCustomers";
+import { getSaleById, postCustomerWithSale, postPaymentSale, putCustomerSale } from "../../../api/Post/SaleApi/SaleApi";
 import { getPayments } from "../../../api/Post/PaymentApi/PaymentApi";
-import { sendTicket } from "../../../api/Post/TicketApi/TicketApi";
-
-interface SaleProduct {
-  id: number;
-  productId: number;
-  name: string;
-  quantity: number;
-  price: number;
-}
-
-interface PaymentSale {
-  ID_SalePayment?: number;
-  ID_Payment: number;
-  Description: string;
-  Monto: number;
-  ReferenceNumber: string;
-}
+import { openTicket, sendTicket } from "../../../api/Post/TicketApi/TicketApi";
+import { formatFolio } from "../../../utils/folio";
 
 interface CustomerFormData {
   ID_User?: number;
   Name: string;
   Phone: string;
   Email: string;
-  razonSocial?: string;
-  codigoPostal?: string;
-  rfc?: string;
-  regimenFiscal?: string;
+  RazonSocial?: string;
+  CodigoPostal?: string;
+  Rfc?: string;
+  RegimenFiscal?: string;
 }
 
-interface CajasProps {
-  ID_Sale: number;
+interface DraftPayment {
+  ID_Payment: number;
+  Description: string;
+  Monto: number;
+  ReferenceNumber: string;
 }
 
-export default function CajasPays({ ID_Sale }: CajasProps) {
-  const [products, setProducts] = useState<SaleProduct[]>([]);
-  const [customerData, setCustomerData] = useState<CustomerFormData | null>(
-    null,
-  );
-  const [selectedPayment, setSelectedPayment] = useState<PaymentSale[]>([]);
-  const [idSale, setIdSale] = useState<number | null>(null);
+interface PaymentMethod { ID_Payment: number; Description: string }
+
+const money = (value: unknown) => Number(value ?? 0).toLocaleString("es-MX", { style: "currency", currency: "MXN" });
+
+export default function CajasPays({ ID_Sale }: { ID_Sale: number }) {
+  const queryClient = useQueryClient();
   const [paymentMethod, setPaymentMethod] = useState("");
   const [amount, setAmount] = useState("");
   const [reference, setReference] = useState("");
-  const [selectedProductsDelete, setSelectedProductsDelete] = useState<
-    number[]
-  >([]);
-  const allSelected =
-    products.length > 0 &&
-    products.every((p) => selectedProductsDelete.includes(p.id));
+  const [draftPayments, setDraftPayments] = useState<DraftPayment[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
 
-  const { data: paymentsData } = useQuery({
-    queryKey: ["payments"],
-    queryFn: getPayments,
-  });
+  const saleQuery = useQuery({ queryKey: ["sale", ID_Sale], queryFn: () => getSaleById(ID_Sale), enabled: Number(ID_Sale) > 0 });
+  const methodsQuery = useQuery({ queryKey: ["payments"], queryFn: getPayments });
+  const data = saleQuery.data;
+  const methods: PaymentMethod[] = methodsQuery.data?.data ?? [];
 
-  const { data } = useQuery({
-    queryKey: ["sale", ID_Sale],
-    queryFn: () => getSaleById(ID_Sale),
-    enabled: ID_Sale !== null && ID_Sale !== undefined,
-  });
+  const customer: CustomerFormData | null = data?.Cliente?.ID_User ? {
+    ID_User: data.Cliente.ID_User,
+    Name: data.Cliente.Name ?? "",
+    Phone: data.Cliente.Phone?.Description ?? "",
+    Email: data.Cliente.Email?.Description ?? "",
+    RazonSocial: data.Facturacion?.RazonSocial ?? "",
+    CodigoPostal: data.Facturacion?.CodigoPostal ?? "",
+    Rfc: data.Facturacion?.Rfc ?? "",
+    RegimenFiscal: data.Facturacion?.RegimenFiscal ?? "",
+  } : null;
 
-  useEffect(() => {
-    if (ID_Sale) {
-      setIdSale(ID_Sale);
-    }
-  }, [ID_Sale]);
+  const currentBalance = Number(data?.Balance_Total ?? 0);
+  const draftTotal = useMemo(() => draftPayments.reduce((sum, payment) => sum + payment.Monto, 0), [draftPayments]);
+  const remaining = Math.max(0, currentBalance - draftTotal);
+  const isPaid = data?.Pagada === "Pagada" || currentBalance <= 0;
 
-  useEffect(() => {
-    if (data) {
-      const mappedProducts: SaleProduct[] = data.SaleProduct.map(
-        (item: any) => ({
-          id: item.ID_SaleProduct,
-          productId: item.ID_Product,
-          name: item.Product.Description + " - " + item.Stock.Description,
-          quantity: item.Quantity,
-          price: item.Saleprice,
-        }),
-      );
-      setProducts(mappedProducts);
-
-      const datacustomer = {
-        ID_User: data.Cliente?.ID_User || "",
-        Name: data.Cliente?.Name || "",
-        Phone: data.Cliente?.Phone?.Description || "",
-        Email: data.Cliente?.Email?.Description || "",
-        razonSocial: data.Facturacion?.razonSocial || "",
-        codigoPostal: data.Facturacion?.codigoPostal || "",
-        rfc: data.Facturacion?.rfc || "",
-        regimenFiscal: data.Facturacion?.regimenFiscal || "",
-      };
-      setCustomerData(datacustomer);
-
-      const datapay = data.PaymentSale.map((pago: any) => ({
-        ID_SalePayment: pago.ID_PaymentSale,
-        ID_Payment: pago.Payment.ID_Payment,
-        Description: pago.Payment.Description,
-        Monto: pago.Monto,
-        ReferenceNumber: pago.ReferenceNumber,
-      }));
-
-      setSelectedPayment(datapay);
-    }
-  }, [data]);
-
-  const queryClient = useQueryClient();
-
-  const { mutate } = useMutation({
+  const paymentMutation = useMutation({
     mutationFn: postPaymentSale,
-    onError: (error) => {
-      toast.error(`${error.message}`, {
-        position: "top-right",
-      });
+    onSuccess: async (result) => {
+      toast.success(result.message || "Pago registrado correctamente");
+      setDraftPayments([]); setPaymentMethod(""); setAmount(""); setReference("");
+      await queryClient.invalidateQueries({ queryKey: ["sale", ID_Sale] });
+      await queryClient.invalidateQueries({ queryKey: ["sale"] });
     },
-    onSuccess: () => {
-      toast.success("Pago registrado con éxito", {
-        position: "top-right",
-        progressClassName: "custom-progress",
-      });
-      queryClient.invalidateQueries({ queryKey: ["sale"] });
-    },
+    onError: (error: Error) => toast.error(error.message),
   });
 
-  const { mutate: customerCreateMutate } = useMutation({
+  const customerCreateMutation = useMutation({
     mutationFn: postCustomerWithSale,
-    onError: (error) => {
-      toast.error(`${error.message}`, {
-        position: "top-right",
-      });
-    },
-    onSuccess: () => {
-      toast.success("Cliente registrado con éxito", {
-        position: "top-right",
-        progressClassName: "custom-progress",
-      });
-      queryClient.invalidateQueries({ queryKey: ["sale"] });
-    },
+    onSuccess: async () => { toast.success("Cliente asignado correctamente"); await queryClient.invalidateQueries({ queryKey: ["sale", ID_Sale] }); },
+    onError: (error: Error) => toast.error(error.message),
   });
-
-  const { mutate: customerUpdateMutate } = useMutation({
+  const customerUpdateMutation = useMutation({
     mutationFn: putCustomerSale,
-    onError: (error) => {
-      toast.error(`${error.message}`, {
-        position: "top-right",
-      });
-    },
-    onSuccess: () => {
-      toast.success("Cliente actualizado con éxito", {
-        position: "top-right",
-        progressClassName: "custom-progress",
-      });
-      queryClient.invalidateQueries({ queryKey: ["sale"] });
-    },
+    onSuccess: async () => { toast.success("Cliente actualizado correctamente"); await queryClient.invalidateQueries({ queryKey: ["sale", ID_Sale] }); },
+    onError: (error: Error) => toast.error(error.message),
   });
+  const emailMutation = useMutation({ mutationFn: sendTicket, onSuccess: () => toast.success("Ticket de venta enviado por correo"), onError: (error: Error) => toast.error(error.message) });
 
-  const { mutate: sendTiket } = useMutation({
-    mutationFn: sendTicket,
-    onError: (error) => {
-      toast.error(`${error.message}`, {
-        position: "top-right",
-      });
-    },
-    onSuccess: () => {
-      setIdSale(null);
-      toast.success("Ticket enviado con éxito", {
-        position: "top-right",
-        progressClassName: "custom-progress",
-      });
-      queryClient.invalidateQueries({ queryKey: ["sale"] });
-    },
-  });
-
-  const handleCreateCustomer = () => {
-    setModalOpen(true);
+  const addPayment = () => {
+    const numericAmount = Number(amount);
+    if (!paymentMethod || !Number.isFinite(numericAmount) || numericAmount <= 0) return toast.warn("Selecciona un método e ingresa un monto mayor a cero.");
+    if (Math.round(numericAmount * 100) > Math.round(remaining * 100)) return toast.warn("El monto no puede superar el saldo pendiente.");
+    const method = methods.find((item) => item.ID_Payment === Number(paymentMethod));
+    if (!method) return toast.error("El método seleccionado no está disponible.");
+    setDraftPayments((previous) => [...previous, { ID_Payment: method.ID_Payment, Description: method.Description, Monto: numericAmount, ReferenceNumber: reference.trim() }]);
+    setPaymentMethod(""); setAmount(""); setReference("");
   };
 
-  const handleSaveCustomer = (data: CustomerFormData) => {
-    const extendedData = {
-      ...data,
-      ID_Sale,
-    };
-
-    if (data.ID_User != null) {
-      customerUpdateMutate(extendedData);
-    } else {
-      customerCreateMutate(extendedData);
-    }
+  const savePayments = () => {
+    if (!draftPayments.length) return toast.warn("Agrega al menos un pago nuevo.");
+    paymentMutation.mutate({ ID_Sale, Payment: draftPayments });
   };
 
-  const handleAddPayment = () => {
-    if (!paymentMethod || !amount) return;
-
-    const selectedPaymentData = paymentsData.data.find(
-      (p: PaymentSale) => p.ID_Payment === Number(paymentMethod),
-    );
-
-    setSelectedPayment((prev) => [
-      ...prev,
-      {
-        ID_Payment: Number(paymentMethod),
-        Description: selectedPaymentData?.Description || "",
-        Monto: parseFloat(amount),
-        ReferenceNumber: reference || "",
-      },
-    ]);
-
-    // Limpiar campos
-    setPaymentMethod("");
-    setAmount("");
-    setReference("");
+  const saveCustomer = (form: CustomerFormData) => {
+    const payload = { ...form, ID_Sale };
+    if (form.ID_User) customerUpdateMutation.mutate(payload);
+    else customerCreateMutation.mutate(payload);
   };
 
-  const handleDeletePayment = (index: number) => {
-    setSelectedPayment((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const handleImpresTicket = async () => {
-    try {
-      window.open(`${import.meta.env.VITE_API_URL}/ticket/${idSale}`, "_blank");
-      setIdSale(null);
-    } catch (error) {
-      console.error("Error al imprimir el ticket:", error);
-    }
-  };
-
-  const handleSendTicket = () => {
-    console.log("Imprimir ticket", idSale);
-    if (idSale !== null) {
-      sendTiket(idSale);
-    }
-  };
-
-  const handleSavePay = async () => {
-    const filteredPayments = selectedPayment.filter(
-      (p) => p.ID_SalePayment === undefined,
-    );
-
-    const data = {
-      ID_Sale,
-      Payment: filteredPayments,
-    };
-
-    mutate(data);
-  };
+  if (saleQuery.isLoading) return <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-slate-500">Cargando venta…</div>;
+  if (saleQuery.isError || !data) return <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-700">No fue posible cargar la venta.</div>;
 
   return (
-    <div className="p-6 bg-white rounded-xl shadow-md max-w-3xl mx-auto">
-      <div className="border rounded p-4 mb-4 overflow-x-auto">
-        <h3 className="font-semibold mb-2">Productos en venta</h3>
+    <div className="w-full min-w-0 space-y-5">
+      <header className="flex flex-col gap-3 border-b border-slate-200 pb-5 sm:flex-row sm:items-start sm:justify-between">
+        <div><p className="font-mono text-sm font-bold text-[#c70063]">Venta {formatFolio(ID_Sale)}</p><h2 className="text-2xl font-black text-slate-900">Registrar abono</h2><p className="text-sm text-slate-500">Captura únicamente el dinero recibido en este momento.</p></div>
+        <span className={`w-fit rounded-full px-3 py-1 text-sm font-bold ${isPaid ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-800"}`}>{isPaid ? "Liquidada" : "Saldo pendiente"}</span>
+      </header>
 
-        {/* Vista tabla en pantallas medianas y grandes */}
-        <table className="hidden sm:table w-full text-sm">
-          <thead>
-            <tr className="border-b">
-              <th className="text-left">
-                <input
-                  type="checkbox"
-                  checked={allSelected}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelectedProductsDelete(products.map((p) => p.id));
-                    } else {
-                      setSelectedProductsDelete([]);
-                    }
-                  }}
-                />
-              </th>
-              <th className="text-left">Producto</th>
-              <th>Cantidad</th>
-              <th>Precio</th>
-              <th>Subtotal</th>
-            </tr>
-          </thead>
-          <tbody>
-            {products.map((p) => (
-              <tr key={p.id} className="border-b">
-                <td>
-                  <input
-                    type="checkbox"
-                    checked={selectedProductsDelete.includes(p.id)}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      setSelectedProductsDelete((prev) =>
-                        checked
-                          ? [...prev, p.id]
-                          : prev.filter((id) => id !== p.id),
-                      );
-                    }}
-                  />
-                </td>
-                <td className="py-1">{p.name}</td>
-                <td className="text-center">{p.quantity}</td>
-                <td className="text-center">${p.price}</td>
-                <td className="text-center">
-                  ${(p.price * p.quantity).toFixed(2)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <section className="grid gap-3 sm:grid-cols-3">
+        <div className="rounded-2xl bg-slate-50 p-4"><p className="text-sm text-slate-500">Total de venta</p><p className="text-xl font-black text-slate-900">{money(data.Total)}</p></div>
+        <div className="rounded-2xl bg-slate-50 p-4"><p className="text-sm text-slate-500">Pagado anteriormente</p><p className="text-xl font-black text-slate-900">{money(Number(data.Total) - currentBalance)}</p></div>
+        <div className="rounded-2xl bg-[#c70063]/5 p-4"><p className="text-sm text-[#9d004e]">Saldo actual</p><p className="text-2xl font-black text-[#c70063]">{money(currentBalance)}</p></div>
+      </section>
 
-        {/* Vista tipo cards en móviles */}
-        <div className="sm:hidden space-y-3">
-          {products.map((p) => (
-            <div
-              key={p.id}
-              className="border rounded-lg p-3 shadow-sm flex flex-col gap-2"
-            >
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={selectedProductsDelete.includes(p.id)}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      setSelectedProductsDelete((prev) =>
-                        checked
-                          ? [...prev, p.id]
-                          : prev.filter((id) => id !== p.id),
-                      );
-                    }}
-                  />
-                  <span className="font-medium">{p.name}</span>
-                </div>
-                <span className="text-gray-700 font-semibold">${p.price}</span>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-500">Cantidad:</span>
-                <span className="text-gray-800">{p.quantity}</span>
-              </div>
-
-              <div className="flex justify-between items-center border-t pt-2">
-                <span className="font-medium">Subtotal:</span>
-                <span className="text-green-600 font-semibold">
-                  ${(p.price * p.quantity).toFixed(2)}
-                </span>
-              </div>
-            </div>
-          ))}
+      <section className="rounded-2xl border border-slate-200 p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>{customer ? <><p className="text-xs font-bold uppercase tracking-wide text-[#007782]">Cliente</p><p className="font-bold text-slate-900">{customer.Name}</p><p className="text-sm text-slate-500">{customer.Email}</p></> : <><p className="font-bold text-slate-900">Sin cliente asignado</p><p className="text-sm text-slate-500">Asigna uno para enviar el comprobante por correo.</p></>}</div>
+          <button type="button" onClick={() => setModalOpen(true)} className="rounded-xl border border-[#007782]/30 px-4 py-2.5 font-bold text-[#007782] hover:bg-[#007782]/5">{customer ? "Editar cliente" : "Asignar cliente"}</button>
         </div>
-      </div>
+      </section>
 
-      <div className="flex flex-col md:flex-wrap md:flex-row justify-between items-start md:items-center gap-4 mb-4">
-        <div className="text-sm w-full md:flex-1 md:min-w-[200px]">
-          <p>Subtotal: ${data?.Subtotal}</p>
-          <p>IVA: ${data?.Iva}</p>
-          <p className="font-semibold">Total: ${data?.Total}</p>
-          <p className="font-semibold">Balance Total: ${data?.Balance_Total}</p>
+      <section className="overflow-hidden rounded-2xl border border-slate-200">
+        <div className="border-b border-slate-200 bg-slate-50 px-4 py-3"><h3 className="font-bold text-slate-900">Productos de la venta</h3></div>
+        <div className="divide-y divide-slate-100">{(data.SaleProduct ?? []).map((item: any) => <div key={item.ID_SaleProduct} className="grid grid-cols-[1fr_auto] gap-3 px-4 py-3 text-sm"><div><p className="font-semibold text-slate-800">{item.Product?.Description} · {item.Stock?.Description}</p><p className="text-slate-500">{item.Quantity} × {money(item.Saleprice)}</p></div><p className="font-bold">{money(Number(item.Quantity) * Number(item.Saleprice))}</p></div>)}</div>
+      </section>
+
+      {!isPaid && <section className="rounded-2xl border border-slate-200 p-4 sm:p-5">
+        <div className="mb-4"><p className="text-xs font-bold uppercase tracking-wide text-[#c70063]">Nuevo abono</p><h3 className="font-bold text-slate-900">¿Cómo recibió el pago?</h3></div>
+        <div className="grid gap-4 md:grid-cols-3">
+          <label className="text-sm font-semibold text-slate-700">Método<select value={paymentMethod} onChange={(event) => { setPaymentMethod(event.target.value); setAmount(remaining.toFixed(2)); }} className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 font-normal"><option value="">Seleccionar</option>{methods.map((method) => <option key={method.ID_Payment} value={method.ID_Payment}>{method.Description}</option>)}</select></label>
+          <label className="text-sm font-semibold text-slate-700">Monto<input type="number" min="0.01" step="0.01" max={remaining} value={amount} onChange={(event) => setAmount(event.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 font-normal" placeholder="0.00" /></label>
+          <label className="text-sm font-semibold text-slate-700">Referencia o nota<input value={reference} maxLength={120} onChange={(event) => setReference(event.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 font-normal" placeholder="Opcional" /></label>
         </div>
-        <button
-          onClick={handleCreateCustomer}
-          className={styles.buttonAgregarCliente}
-        >
-          + Agregar cliente
-        </button>
-      </div>
+        <button type="button" onClick={addPayment} disabled={!paymentMethod || !amount} className="mt-4 rounded-xl bg-[#007782] px-4 py-2.5 font-bold text-white disabled:opacity-40">Agregar al abono</button>
+      </section>}
 
-      <div className="flex flex-col md:flex-wrap md:flex-row justify-between items-start md:items-center gap-4 mb-4">
-        <div className="text-sm w-full md:flex-1 md:min-w-[200px]">
-          <select
-            id="metodoPago"
-            name="metodoPago"
-            className="border rounded px-3 py-2 w-full"
-            value={paymentMethod}
-            onChange={(e) => setPaymentMethod(e.target.value)}
-          >
-            <option value="">Selecciona un método de pago</option>
-            {paymentsData?.data?.map((payment: any) => (
-              <option key={payment.ID_Payment} value={payment.ID_Payment}>
-                {payment.Description}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+      {draftPayments.length > 0 && <section className="rounded-2xl border border-[#c70063]/20 bg-[#c70063]/[0.03] p-4 sm:p-5"><h3 className="font-bold text-slate-900">Pagos por registrar</h3><div className="mt-3 space-y-2">{draftPayments.map((payment, index) => <div key={`${payment.ID_Payment}-${index}`} className="flex items-center justify-between gap-3 rounded-xl bg-white p-3"><div><p className="font-semibold">{payment.Description}</p><p className="text-xs text-slate-500">{payment.ReferenceNumber || "Sin referencia"}</p></div><div className="flex items-center gap-3"><strong>{money(payment.Monto)}</strong><button type="button" onClick={() => setDraftPayments((items) => items.filter((_, itemIndex) => itemIndex !== index))} className="text-sm font-semibold text-red-600">Quitar</button></div></div>)}</div><div className="mt-4 flex justify-between border-t border-[#c70063]/10 pt-3"><span>Saldo después del abono</span><strong>{money(remaining)}</strong></div></section>}
 
-      {paymentMethod && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label
-              htmlFor="paymentAmount"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Monto del pago
-            </label>
-            <input
-              type="number"
-              id="paymentAmount"
-              name="paymentAmount"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="Ej. 500.00"
-              className="w-full border rounded px-3 py-2"
-              required
-            />
-          </div>
+      {(data.PaymentSale?.length ?? 0) > 0 && <details className="rounded-2xl border border-slate-200 p-4"><summary className="cursor-pointer font-bold text-slate-800">Historial de pagos ({data.PaymentSale.length})</summary><div className="mt-3 divide-y divide-slate-100">{data.PaymentSale.map((payment: any) => <div key={payment.ID_PaymentSale} className="flex justify-between gap-3 py-2 text-sm"><div><p className="font-semibold">{payment.Payment?.Description ?? payment.Description}</p><p className="text-slate-500">{payment.ReferenceNumber || "Sin referencia"}</p></div><strong>{money(payment.Monto)}</strong></div>)}</div></details>}
 
-          <div>
-            <label
-              htmlFor="reference"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Número de referencia/Notas
-            </label>
-            <input
-              type="text"
-              id="reference"
-              name="reference"
-              value={reference}
-              onChange={(e) => setReference(e.target.value)}
-              placeholder="Ej. #REF1234"
-              className="w-full border rounded px-3 py-2"
-            />
-          </div>
+      <footer className="grid gap-2 border-t border-slate-200 pt-5 sm:grid-cols-[auto_auto_1fr]">
+        <button type="button" onClick={() => openTicket(ID_Sale).catch(() => toast.error("No fue posible abrir el ticket"))} className="rounded-xl border border-slate-300 px-4 py-2.5 font-bold text-slate-700">Imprimir ticket</button>
+        <button type="button" onClick={() => emailMutation.mutate(ID_Sale)} disabled={!customer?.Email || emailMutation.isPending} className="rounded-xl border border-slate-300 px-4 py-2.5 font-bold text-slate-700 disabled:opacity-40">Enviar por correo</button>
+        <button type="button" onClick={savePayments} disabled={!draftPayments.length || paymentMutation.isPending || isPaid} className="rounded-xl bg-[#c70063] px-5 py-3 font-black text-white disabled:opacity-40 sm:justify-self-end">{paymentMutation.isPending ? "Registrando…" : remaining === 0 && draftPayments.length ? "Liquidar venta" : `Registrar abono de ${money(draftTotal)}`}</button>
+      </footer>
 
-          <div className="col-span-full">
-            <button
-              type="button"
-              onClick={handleAddPayment}
-              className="mt-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-            >
-              Agregar pago
-            </button>
-          </div>
-        </div>
-      )}
-
-      {selectedPayment.length > 0 && (
-        <div className="mt-6">
-          <h3 className="font-semibold mb-2">Pagos agregados:</h3>
-
-          <div className="hidden md:grid grid-cols-4 gap-4 font-semibold text-gray-700 border-b pb-1 mb-2">
-            <span>Método</span>
-            <span>Monto</span>
-            <span>Referencia</span>
-            <span>Acción</span>
-          </div>
-
-          <div className="space-y-2">
-            {selectedPayment.map((p, i) => (
-              <div
-                key={i}
-                className="grid md:grid-cols-4 gap-4 bg-gray-50 p-2 rounded border text-sm items-center"
-              >
-                <div className="flex md:block justify-between">
-                  <span className="font-medium md:hidden">Método: </span>
-                  <span>{p.Description}</span>
-                </div>
-
-                <div className="flex md:block justify-between">
-                  <span className="font-medium md:hidden">Monto: </span>
-                  <span>${p.Monto}</span>
-                </div>
-
-                <div className="flex md:block justify-between">
-                  <span className="font-medium md:hidden">Referencia: </span>
-                  <span>{p.ReferenceNumber || "—"}</span>
-                </div>
-
-                <div className="flex md:block justify-between">
-                  <span className="font-medium md:hidden">Acción: </span>
-                  <button
-                    disabled={p.ID_SalePayment !== undefined}
-                    onClick={() => handleDeletePayment(i)}
-                    className={`${
-                      p.ID_SalePayment !== undefined
-                        ? "text-gray-400 cursor-not-allowed"
-                        : "text-red-600 hover:underline"
-                    }`}
-                  >
-                    Eliminar
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="flex flex-col sm:flex-row flex-wrap mt-10 gap-2 sm:justify-end w-full">
-        <button
-          onClick={handleImpresTicket}
-          className={`bg-green-600 text-white font-semibold py-2 px-4 rounded hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed`}
-          disabled={!idSale}
-        >
-          Imprimir ticket
-        </button>
-        <button
-          onClick={handleSendTicket}
-          className={`bg-yellow-500 text-white font-semibold py-2 px-4 rounded hover:bg-yellow-600 transition disabled:opacity-50 disabled:cursor-not-allowed`}
-          disabled={!idSale}
-        >
-          Enviar por correo
-        </button>
-        <button
-          onClick={handleSavePay}
-          disabled={selectedPayment.length === 0}
-          className="w-full sm:w-auto bg-blue-600 text-white font-semibold py-2 px-4 rounded hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Completar
-        </button>
-      </div>
-
-      {modalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <ModalCustomers
-            onClose={() => setModalOpen(false)}
-            onSave={handleSaveCustomer}
-            onEdit={customerData?.ID_User}
-          />
-        </div>
-      )}
+      {modalOpen && <ModalCustomers onClose={() => setModalOpen(false)} onSave={saveCustomer} onEdit={customer?.ID_User} />}
     </div>
   );
 }

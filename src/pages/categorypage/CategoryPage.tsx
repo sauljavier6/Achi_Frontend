@@ -1,6 +1,5 @@
 
 import { useState } from "react";
-import styles from "./CategoryPage.module.scss";
 import { useMutation, useQueryClient  } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
 import { useAuth } from "../../hooks/useAuth";
@@ -26,7 +25,7 @@ const CategoryPage = () => {
         });
     },
     onSuccess: () => {
-        toast.success("Categoria registrado con éxito", {
+        toast.success("Categoría(s) eliminada(s) correctamente", {
         position: "top-right",
         progressClassName: "custom-progress",
         });
@@ -44,6 +43,8 @@ const CategoryPage = () => {
   };
 
   const handleDeleteCategory = () => {
+    const label = selectedIds.length === 1 ? "esta categoría" : `estas ${selectedIds.length} categorías`;
+    if (!window.confirm(`¿Deseas eliminar ${label}? Esta acción no se puede deshacer.`)) return;
     mutate(selectedIds);
     setSelectedIds([])
   };
@@ -53,7 +54,7 @@ const CategoryPage = () => {
       setCategoryToEdit(selectedIds[0]);
       setModalOpen(true);
     } else if (selectedIds.length > 1) {
-      toast.warn('Solo puedes editar una categoria a la vez');
+      toast.warn('Solo puedes editar una categoría a la vez');
     }
   };
 
@@ -64,34 +65,35 @@ const CategoryPage = () => {
   };
 
   return (
-    <div className="p-4 bg-gray-50 rounded-lg">
+    <section className="min-w-0 rounded-2xl border border-slate-200/70 bg-white p-3 sm:p-4">
       <div className="flex flex-col lg:flex-row md:items-center md:justify-between mb-4 gap-2">
-        <h1 className={styles.title}>Categorias</h1>
+        <div><p className="text-sm font-semibold text-[#c70063]">Catálogo</p><h1 className="text-2xl font-bold text-slate-900">Categorías</h1><p className="text-sm text-slate-500">Organiza los productos para facilitar su búsqueda.</p></div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
           <input
             type="text"
-            placeholder="Buscar categoria..."
+            placeholder="Buscar categoría"
+            aria-label="Buscar categorías"
             value={searchTerm}
             onChange={handleSearchChange}
-            className="px-3 py-2 border border-gray-300 rounded-md w-full"
+            className="min-h-11 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none transition focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10"
           />
         {(isAdmin || isTrabajador) && (
           <button
             onClick={handleCreateCategory}
-            className={styles.buttonCrearProducto}
+            className="min-h-11 rounded-xl bg-[#c70063] px-4 py-2.5 font-bold text-white hover:bg-[#a90054]"
           >
-            Crear
+            Nueva categoría
           </button>
         )}
         {(isAdmin || isTrabajador) && (
           <button
             onClick={handleEdit}
             disabled={selectedIds.length !== 1}
-            className={`px-4 py-2 rounded font-semibold text-white transition-colors duration-200 
+            className={`min-h-11 rounded-xl px-4 py-2.5 font-bold text-white transition-colors duration-200 
               ${selectedIds.length !== 1
                 ? 'bg-gray-300 text-gray-600 cursor-not-allowed' 
-                : styles.buttonEditarProducto}
+                : 'bg-[#007782] hover:bg-[#00636c]'}
             `}
           >
             Editar
@@ -101,10 +103,10 @@ const CategoryPage = () => {
           <button
             onClick={handleDeleteCategory}
             disabled={selectedIds?.length === 0}
-            className={`px-4 py-2 rounded font-semibold text-white transition-colors duration-200 
+            className={`min-h-11 rounded-xl px-4 py-2.5 font-bold text-white transition-colors duration-200 
               ${selectedIds?.length === 0 
                 ? 'bg-gray-300 text-gray-600 cursor-not-allowed' 
-                : styles.buttonEliminarProducto}
+                : 'border border-red-600 bg-red-600 text-white hover:bg-red-700'}
             `}
           >
             Eliminar
@@ -117,11 +119,9 @@ const CategoryPage = () => {
       onResetComplete={() => setResetChecks(false)} searchTerm={searchTerm}/>
 
       {modalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <ModalCategory onClose={handleClose} onEdit={CategoryToEdit}/>
-        </div>
+        <ModalCategory onClose={handleClose} onEdit={CategoryToEdit}/>
       )}
-    </div>
+    </section>
   );
 };
 

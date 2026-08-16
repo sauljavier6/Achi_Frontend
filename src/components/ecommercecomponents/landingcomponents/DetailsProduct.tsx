@@ -60,18 +60,14 @@ export default function DetailsProduct() {
   const [selectedSize, setSelectedSize] = useState<Stock | null>(null);
   const { state, addItem } = useCart();
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
-  const [loadingProduct, setLoadingProduct] = useState(true);
 
   useEffect(() => {
     const fetchProduct = async () => {
       if (!id) {
-        setLoadingProduct(false);
         return;
       }
 
       try {
-        setLoadingProduct(true);
-
         const data = await getProductById(Number(id));
 
         setProduct(data);
@@ -91,8 +87,6 @@ export default function DetailsProduct() {
         setRelatedProducts(related.data);
       } catch (error) {
         console.error("Error fetching product:", error);
-      } finally {
-        setLoadingProduct(false);
       }
     };
 

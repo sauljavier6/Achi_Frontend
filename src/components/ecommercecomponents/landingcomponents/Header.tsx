@@ -95,7 +95,7 @@ export default function Header() {
           }}
           className="text-left text-lg font-bold text-white md:text-2xl"
         >
-          Paws & Pastels
+          Achi Veterinaria
         </button>
 
         <div className="hidden items-center gap-8 md:flex">

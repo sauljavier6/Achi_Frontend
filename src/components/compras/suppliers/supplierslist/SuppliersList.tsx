@@ -131,7 +131,7 @@ const SuppliersList = ({ onDelete, resetChecks, onResetComplete, searchTerm }: M
                 onClick={() => setPage(num)}
                 className={`px-3 py-1 rounded ${
                   page === num
-                    ? "bg-blue-500 text-white"
+                    ? "bg-[#c70063] text-white"
                     : "bg-gray-200 hover:bg-gray-300"
                 }`}
               >

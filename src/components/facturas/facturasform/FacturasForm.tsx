@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { toast } from "react-toastify";
 import {
   getFacturacionSaleById,
   postFactura,
@@ -32,6 +33,7 @@ interface Item {
 }
 
 const FacturaForm = () => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState<number | null>(null);
   const [debouncedTicket, setDebouncedTicket] = useState<number | null>(null);
   const [pago, setPago] = useState({
@@ -99,9 +101,16 @@ const FacturaForm = () => {
       Items: data?.SaleProduct,
     };
 
-    console.log("receptor:", receptor);
 
-    await postFactura(datafactura!);
+    try {
+      setIsSubmitting(true);
+      await postFactura(datafactura!);
+      toast.success("Factura emitida correctamente");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No fue posible emitir la factura");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
 
@@ -118,34 +127,20 @@ const FacturaForm = () => {
 
   const disable = formularioIncompleto || yaTimbrado;
 
-  console.log("disable:", disable);
-  console.log("formularioIncompleto:", formularioIncompleto);
-  console.log("yaTimbrado:", yaTimbrado);
 
-  console.log("VALIDACIÓN CAMPOS", {
-    rfc: receptor.rfc,
-    razonsocial: receptor.razonsocial,
-    codigopostal: receptor.codigopostal,
-    regimenFiscal: receptor.regimenFiscal,
-    usoCFDI: receptor.usoCFDI,
-    formaPago: pago.formaPago,
-    metodoPago: pago.metodoPago,
-  });
 
   const ticketValido = typeof debouncedTicket === "number" && debouncedTicket > 0;
 
   return (
-    <form onSubmit={handleSubmit} className="mx-auto bg-white p-6">
-      <h2 className="text-xl font-semibold text-gray-800 mb-6">
-        Facturar Ticket
-      </h2>
+    <form onSubmit={handleSubmit} className="w-full min-w-0">
+      <div className="mb-7"><p className="text-sm font-semibold text-[#c70063]">Facturación</p><h2 className="text-2xl font-bold text-slate-900">Emitir factura</h2><p className="text-sm text-slate-500">Busca una venta, verifica los datos fiscales y emite el comprobante.</p></div>
 
       {/* =======================
          DATOS DEL TICKET
          ======================= */}
       <section className="mb-6">
         <h3 className="text-sm font-semibold text-gray-700 mb-3 border-b pb-1">
-          Datos del Ticket
+          1. Buscar venta
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -156,6 +151,9 @@ const FacturaForm = () => {
 
             <input
               type="number"
+              min="1"
+              placeholder="Número de ticket"
+              aria-label="Número de ticket"
               value={searchTerm !== null ? String(searchTerm) : ""}
               onChange={(e) =>
                 setSearchTerm(
@@ -180,7 +178,7 @@ const FacturaForm = () => {
 
             {/* 🔄 BUSCANDO TICKET */}
             {isFetching && (
-              <div className="flex items-center gap-2 rounded-md border border-blue-300 bg-blue-50 px-3 py-2">
+              <div className="flex items-center gap-2 rounded-xl border border-[#007782]/25 bg-[#007782]/5 px-3 py-2 text-[#00636c]">
                 <span className="text-blue-600 text-sm animate-spin">🔄</span>
                 <div className="text-sm text-blue-800">
                   Buscando información del ticket…
@@ -228,9 +226,9 @@ const FacturaForm = () => {
       {hasData && (
         <>
           {/* DATOS DEL RECEPTOR */}
-          <section className="mb-6">
+          <section className="mb-7 rounded-2xl border border-slate-200 p-4 sm:p-5">
             <h3 className="text-sm font-semibold text-gray-700 mb-3 border-b pb-1">
-              Datos del Receptor
+              2. Datos fiscales del receptor
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -327,9 +325,9 @@ const FacturaForm = () => {
           </section>
 
           {/* DATOS DE PAGO */}
-          <section className="mb-6">
+          <section className="mb-7 rounded-2xl border border-slate-200 p-4 sm:p-5">
             <h3 className="text-sm font-semibold text-gray-700 mb-3 border-b pb-1">
-              Datos de Pago
+              3. Datos del pago
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -371,14 +369,14 @@ const FacturaForm = () => {
           </section>
 
           {/* CONCEPTOS */}
-          <section className="mb-6">
+          <section className="mb-7 rounded-2xl border border-slate-200 p-4 sm:p-5">
             <h3 className="text-sm font-semibold text-gray-700 mb-3 border-b pb-1">
-              Conceptos
+              4. Conceptos
             </h3>
 
             <div className="space-y-2">
               {data?.SaleProduct?.map((item: Item, i: number) => (
-                <div key={i} className="grid grid-cols-4 gap-2 text-sm">
+                <div key={i} className="grid grid-cols-1 gap-2 rounded-xl bg-slate-50 p-2 text-sm sm:grid-cols-4">
                   <input
                     disabled
                     className="rounded-md border border-gray-300 px-2 py-1 bg-gray-50"
@@ -405,7 +403,7 @@ const FacturaForm = () => {
           </section>
 
           {/* TOTALES */}
-          <div className="text-right text-sm text-gray-700 mb-6">
+          <div className="mb-6 ml-auto max-w-sm rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">
             <div>Subtotal: ${subtotal}</div>
             <div>IVA: ${iva}</div>
             <div className="text-lg font-bold text-gray-900">
@@ -414,18 +412,18 @@ const FacturaForm = () => {
           </div>
 
           <button
-            disabled={disable}
+            disabled={disable || isSubmitting}
             type="submit"
             className={`
               w-full md:w-auto px-6 py-2 rounded-md text-sm font-semibold transition
               ${
-                disable
+                disable || isSubmitting
                   ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  : "bg-blue-600 text-white hover:bg-blue-700"
+                  : "bg-[#c70063] text-white hover:bg-[#a90054]"
               }
             `}
           >
-            Timbrar Factura
+            {isSubmitting ? "Emitiendo factura..." : "Emitir factura"}
           </button>
         </>
       )}

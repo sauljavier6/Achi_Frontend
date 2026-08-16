@@ -1,11 +1,12 @@
-const token = localStorage.getItem('token')
+const authHeader = () => ({ 'Authorization': `Bearer ${localStorage.getItem('token') ?? ''}` });
 
-export const getTicket = (idSale: number) => {
-  return `${import.meta.env.VITE_API_URL}/ticket/${idSale}?token=${token}`;
-};
-
-export const getTicketCotizacion = (idSale: number) => {
-  return `${import.meta.env.VITE_API_URL}/ticket/${idSale}?token=${token}`;
+export const openTicket = async (idSale: number, quotation = false) => {
+  const path = quotation ? `ticket/cotizacion/${idSale}` : `ticket/${idSale}`;
+  const res = await fetch(`${import.meta.env.VITE_API_URL}/${path}`, { headers: authHeader() });
+  if (!res.ok) throw new Error('No fue posible obtener el ticket');
+  const url = URL.createObjectURL(await res.blob());
+  window.open(url, '_blank', 'noopener,noreferrer');
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 };
 
 
@@ -14,7 +15,7 @@ export const sendTicket = async (id: number) => {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+      ...authHeader()
     }
   });
 
@@ -32,7 +33,7 @@ export const sendCotizacion = async (id: number) => {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+      ...authHeader()
     }
   });
 

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { getSaleWeb } from "../../../api/Post/SaleApi/SaleApi";
 import { useEffect, useState } from "react";
+import { formatFolio } from "../../../utils/folio";
 
 export interface ISale {
   ID_Sale: number;
@@ -84,7 +85,7 @@ const SalesWebList = ({onSelected, resetChecks, onResetComplete, searchTerm }:Sa
               onChange={handleSelectAll}
               />
             </th>
-            <th className="px-2 py-2">Numero Venta</th>
+            <th className="px-2 py-2">Folio</th>
             <th className="px-2 py-2">Cliente</th>
             <th className="px-2 py-2">Total</th>
             <th className="px-2 py-2">Fecha</th>
@@ -100,7 +101,7 @@ const SalesWebList = ({onSelected, resetChecks, onResetComplete, searchTerm }:Sa
                   onClick={(e) => e.stopPropagation()}
                 />
               </td>
-              <td className="px-2 py-2">{prod.ID_Sale}</td>
+              <td className="px-2 py-2 font-mono font-bold">{formatFolio(prod.ID_Sale)}</td>
               <td className="px-2 py-2">{prod.ID_User? prod.user.Name: "Cliente no asignado"}</td>
               <td className="px-2 py-2">{prod.Total}</td>
                             <td className="px-5 py-2">{(() => {
@@ -111,7 +112,7 @@ const SalesWebList = ({onSelected, resetChecks, onResetComplete, searchTerm }:Sa
                 return `${day}/${month}/${year}`;
               })()}
               </td>
-              <td className="px-2 py-2">{prod.StateWeb? 'Pendiente': 'Completada'}</td>
+              <td className="px-2 py-2"><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${prod.StateWeb ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"}`}>{prod.StateWeb ? "Pendiente" : "Completada"}</span></td>
             </tr>
           ))}
         </tbody>
@@ -144,7 +145,7 @@ const SalesWebList = ({onSelected, resetChecks, onResetComplete, searchTerm }:Sa
                 onClick={() => setPage(num)}
                 className={`px-3 py-1 rounded ${
                   page === num
-                    ? "bg-blue-500 text-white"
+                    ? "bg-[#c70063] text-white"
                     : "bg-gray-200 hover:bg-gray-300"
                 }`}
               >

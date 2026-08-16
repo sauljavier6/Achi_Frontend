@@ -141,4 +141,93 @@
   .input-search {
     @apply rounded-full border border-white/30 bg-white/10 px-5 py-3 text-white outline-none placeholder:text-white/70;
   }
+
+  .auth-label { @apply mb-2 block text-sm font-bold text-on-surface; }
+  .auth-input { @apply min-h-12 w-full rounded-xl border border-outline/35 bg-white px-4 text-on-surface outline-none transition placeholder:text-outline focus:border-primary focus:ring-4 focus:ring-primary/10; }
+  .admin-content > * { @apply mx-auto w-full max-w-[1600px]; }
+  .admin-content form label { @apply mb-1.5 block text-sm font-semibold text-slate-700; }
+  .admin-content form input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  .admin-content form select,
+  .admin-content form textarea { @apply min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/10; }
+  .admin-content form textarea { @apply py-3; }
+  .admin-content form input:disabled,
+  .admin-content form input:read-only,
+  .admin-content form select:disabled { @apply cursor-not-allowed bg-slate-100 text-slate-500; }
+  .admin-content form input[type="file"] { @apply w-full rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3 text-sm; }
+  .admin-content .overflow-x-auto:has(> table) { @apply overflow-hidden rounded-xl border border-slate-200 bg-white shadow-none; }
+  .admin-content table { @apply w-full border-separate border-spacing-0 text-sm; }
+  .admin-content table thead { @apply bg-slate-50 text-xs font-bold uppercase tracking-wide text-slate-500; }
+  .admin-content table th { @apply border-b border-slate-200 px-4 py-3 text-left; }
+  .admin-content table td { @apply border-b border-slate-100 px-4 py-3 text-slate-700; }
+  .admin-content table tbody tr { @apply transition-colors hover:bg-[#c70063]/[0.035]; }
+  .admin-content table tbody tr:last-child td { @apply border-b-0; }
+  .admin-content table input[type="checkbox"] { @apply h-4 w-4 rounded border-slate-300 accent-[#c70063]; }
+  .admin-content button { min-height: 40px; border-radius: .75rem !important; }
+  .admin-content input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  .admin-content select,
+  .admin-content textarea {
+    border-radius: .75rem !important; border-color: #cbd5e1;
+  }
+  .admin-content input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  .admin-content select { min-height: 44px; }
+  .admin-content button:focus-visible { @apply outline-none ring-4 ring-[#c70063]/15; }
+  .admin-content button[class*="buttonCrearProducto"] {
+    min-height: 44px; padding: .625rem 1rem; border: 0; border-radius: .75rem;
+    background: #c70063 !important; color: #fff !important; font-weight: 700;
+    transition: background-color .2s ease, transform .2s ease;
+  }
+  .admin-content button[class*="buttonCrearProducto"]:hover { background: #a90054 !important; }
+  .admin-content button[class*="buttonEditarProducto"] {
+    min-height: 44px; padding: .625rem 1rem; border: 0; border-radius: .75rem;
+    background: #007782 !important; color: #fff !important; font-weight: 700;
+  }
+  .admin-content button[class*="buttonEditarProducto"]:hover { background: #00636c !important; }
+  .admin-content button[class*="buttonEliminarProducto"] {
+    min-height: 44px; padding: .625rem 1rem; border: 1px solid #dc2626; border-radius: .75rem;
+    background: #dc2626 !important; color: #fff !important; font-weight: 700;
+  }
+  .admin-content button[class*="buttonEliminarProducto"]:hover { background: #b91c1c !important; }
+  .admin-content button[class*="buttonCrearProducto"]:disabled,
+  .admin-content button[class*="buttonEditarProducto"]:disabled,
+  .admin-content button[class*="buttonEliminarProducto"]:disabled {
+    border-color: #e2e8f0 !important; background: #e2e8f0 !important; color: #64748b !important;
+    cursor: not-allowed;
+  }
+  .admin-content button[class*="tabActive"] { background: #c70063 !important; color: #fff !important; }
+  .admin-content button[class*="tabinActive"] { background: transparent !important; color: #64748b !important; }
+  .admin-content button[class*="submitButton"] { min-height: 44px; border-radius: .75rem !important; background: #c70063 !important; font-weight: 700; }
+  .admin-content button[class*="buttonAgregarCliente"],
+  .admin-content button[class*="btngenerarfactura"] {
+    min-height: 44px; padding: .625rem 1rem; border: 0; border-radius: .75rem !important;
+    background: #c70063 !important; color: #fff !important; font-weight: 700; box-shadow: none !important;
+  }
+  .admin-content button[class*="buttonAgregarCliente"]:hover,
+  .admin-content button[class*="btngenerarfactura"]:hover { background: #a90054 !important; }
+  .admin-content button[class*="buttonfacturar"],
+  .admin-content button[class*="btnaddvariant"] {
+    min-height: 44px; padding: .625rem 1rem; border: 0; border-radius: .75rem !important;
+    background: #007782 !important; color: #fff !important; font-weight: 700; box-shadow: none !important;
+  }
+  .admin-content button[class*="buttonfacturar"]:hover,
+  .admin-content button[class*="btnaddvariant"]:hover { background: #00636c !important; }
+  .admin-content button[class*="removeButton"],
+  .admin-content button[class*="btnremovevariant"] {
+    min-height: 44px; padding: .625rem 1rem; border: 1px solid #dc2626 !important; border-radius: .75rem !important;
+    background: #dc2626 !important; color: #fff !important; font-weight: 700; box-shadow: none !important;
+  }
+  .admin-content button[class*="removeButton"]:hover,
+  .admin-content button[class*="btnremovevariant"]:hover { background: #b91c1c !important; }
+  .admin-content .overflow-x-auto:has(> table) + div button {
+    min-width: 40px; min-height: 40px; border-radius: .75rem !important;
+  }
+  .admin-content div.fixed.inset-0 > div { max-height: calc(100dvh - 1.5rem); max-width: calc(100vw - 1.5rem); overflow-y: auto; }
+  .admin-content div.fixed.inset-0 { overscroll-behavior: contain; backdrop-filter: blur(2px); }
+  .admin-content div.fixed.inset-0 > div { border: 1px solid #e2e8f0; }
+  .admin-content div.fixed.inset-0 > div > div:first-child { border-color: #e2e8f0; }
+
+  @media (max-width: 767px) {
+    .admin-content .overflow-x-auto:has(> table) { overflow-x: auto; }
+    .admin-content table { min-width: 680px; white-space: nowrap; }
+    .admin-content form button[type="submit"] { min-height: 44px; }
+  }
 }

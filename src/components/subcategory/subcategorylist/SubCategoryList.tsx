@@ -5,7 +5,7 @@ import { getSubCategoryList } from "../../../api/Post/SubCategoryApi/SubCategory
 export interface SubCategoryProps {
   ID_SubCategory: number;
   Description: string;
-  Genero: string;
+  State: boolean;
 }
 
 interface SubCategoryListProps {
@@ -71,7 +71,7 @@ const SubCategoryList = ({onDelete, resetChecks, onResetComplete, searchTerm}: S
             />
             </th>
             <th className="px-2 py-2">ID</th>
-            <th className="px-2 py-2">Descripcion</th>
+            <th className="px-2 py-2">Descripción</th>
             <th className="px-2 py-2">Estado</th>
           </tr>
         </thead>
@@ -86,7 +86,11 @@ const SubCategoryList = ({onDelete, resetChecks, onResetComplete, searchTerm}: S
                 </td>
                 <td className="px-2 py-2">{prod.ID_SubCategory}</td>
                 <td className="px-2 py-2">{prod.Description}</td>
-                <td className="px-2 py-2">{prod.Genero}</td>
+                <td className="px-2 py-2">
+                  <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${prod.State ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
+                    {prod.State ? "Activo" : "Inactivo"}
+                  </span>
+                </td>
               </tr>
             ))
           }
@@ -120,7 +124,7 @@ const SubCategoryList = ({onDelete, resetChecks, onResetComplete, searchTerm}: S
                 onClick={() => setPage(num)}
                 className={`px-3 py-1 rounded ${
                   page === num
-                    ? "bg-blue-500 text-white"
+                    ? "bg-[#c70063] text-white"
                     : "bg-gray-200 hover:bg-gray-300"
                 }`}
               >

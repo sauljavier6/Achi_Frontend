@@ -1,4 +1,4 @@
-const token = localStorage.getItem('token');
+const token = { toString: () => localStorage.getItem('token') || '' };
 
 export const getSubCategory = async () => {
   const res = await fetch(`${import.meta.env.VITE_API_URL}/ecommerce/subcategories`, {
@@ -21,7 +21,7 @@ export const getSubCategory = async () => {
 
 interface SubCategoryPayload  {
   Description: string;
-  State: string;
+  State: boolean;
 }
 
 export const postSubCategory = async (data: SubCategoryPayload) => {
@@ -64,7 +64,6 @@ export const getSubCategoryList = async ({ page = 1, limit = 10, searchTerm='' }
 };
 
 export const getSubCategoryById = async (id: number) => {
-  console.log('id dentro de api', id)
   const res = await fetch(
     `${import.meta.env.VITE_API_URL}/subcategory/${id}`,
     {

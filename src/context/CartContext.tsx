@@ -139,10 +139,20 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const decreaseQty = (ids: { ID_Product: number; ID_Stock: number }) =>
     dispatch({ type: "DECREASE_QTY", payload: ids });
 
-  const getSubTotal = () =>
+  const getProductTotal = () =>
     state.items.reduce(
       (acc: number, item: { Saleprice: number; Quantity: number }) =>
         acc + item.Saleprice * item.Quantity,
+      0,
+    );
+
+  const getSubTotal = () =>
+    state.items.reduce(
+      (acc: number, item: { Saleprice: number; Quantity: number; Iva: number }) => {
+        const gross = item.Saleprice * item.Quantity;
+        const rate = Number(item.Iva) > 1 ? Number(item.Iva) / 100 : Number(item.Iva || 0);
+        return acc + (rate > 0 ? gross / (1 + rate) : gross);
+      },
       0,
     );
 
@@ -152,15 +162,20 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       (
         acc: number,
         item: { Saleprice: number; Quantity: number; Iva: number },
-      ) => acc + item.Saleprice * item.Quantity * item.Iva,
+      ) => {
+        const gross = item.Saleprice * item.Quantity;
+        const rate = Number(item.Iva) > 1 ? Number(item.Iva) / 100 : Number(item.Iva || 0);
+        const base = rate > 0 ? gross / (1 + rate) : gross;
+        return acc + (gross - base);
+      },
       0,
     );
 
   //
   const getEnvio = () => 250;
 
-  // Total general (subtotal + IVA)
-  const getTotal = () => getSubTotal() + getIva() + getEnvio();
+  // Saleprice ya incluye IVA; únicamente se agrega el envío.
+  const getTotal = () => getProductTotal() + getEnvio();
 
   return (
     <CartContext.Provider

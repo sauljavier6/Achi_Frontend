@@ -27,27 +27,19 @@ const ModalCajas = ({ onClose, onEdit }: ModalCajasProps) => {
 
 
   useEffect(() => {
-    if (onEdit) {
-      fetchBatch(onEdit);
-    }
-  }, [onEdit]);
-
-  const fetchBatch = async (id: number) => {
-    try {
-      const res = await getBatchbyIs(id);
-      const data = res.data;
-
-      setFormData((prev) => ({
-        ...prev,
-        lote: data.Lote,
-        estado: data.State ?? data.Estado,
-        fecha: data.Date ? data.Date.slice(0, 10) : "",
-        operador: idusuario,
-      }));
-    } catch (error) {
-      console.error("Error al obtener el lote:", error);
-    }
-  };
+    if (!onEdit) return;
+    const fetchBatch = async () => {
+      try {
+        const res = await getBatchbyIs(onEdit);
+        const data = res.data;
+        setFormData((prev) => ({ ...prev, lote: data.Lote, estado: data.State ?? data.Estado,
+          fecha: data.Date ? data.Date.slice(0, 10) : "", operador: idusuario }));
+      } catch {
+        toast.error("No fue posible cargar los datos de la caja.");
+      }
+    };
+    void fetchBatch();
+  }, [idusuario, onEdit]);
 
   function getTodayDate() {
     const today = new Date();
@@ -58,7 +50,7 @@ const ModalCajas = ({ onClose, onEdit }: ModalCajasProps) => {
     const now = new Date();
     const datePart = now.toISOString().split("T")[0].replace(/-/g, "");
     const randomPart = Math.floor(1000 + Math.random() * 9000);
-    return `${datePart}-${idusuario}-${randomPart}`;
+    return `${datePart}${String(idusuario).padStart(3, "0")}${randomPart}`;
   }
 
   const queryClient = useQueryClient();
@@ -78,7 +70,7 @@ const ModalCajas = ({ onClose, onEdit }: ModalCajasProps) => {
         estado: true,
       });
       onClose();
-      toast.success("Lote creado con éxito", {
+      toast.success("Turno de caja abierto correctamente", {
         position: "top-right",
         progressClassName: "custom-progress",
       });
@@ -101,7 +93,7 @@ const ModalCajas = ({ onClose, onEdit }: ModalCajasProps) => {
         estado: true,
       });
       onClose();
-      toast.success("Lote cerrado con éxito", {
+      toast.success("Turno de caja cerrado correctamente", {
         position: "top-right",
         progressClassName: "custom-progress",
       });
@@ -121,12 +113,13 @@ const ModalCajas = ({ onClose, onEdit }: ModalCajasProps) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (onEdit) {
+      if (!window.confirm("¿Confirmas el corte? El turno quedará cerrado y ya no podrá registrar más ventas.")) return;
       const data = {
         id_batch: onEdit,
         operador: idusuario || "",
         lote: formData.lote,
         fecha: formData.fecha,
-        estado: formData.estado,
+        estado: false,
       };
 
       editMutate(data);
@@ -137,7 +130,6 @@ const ModalCajas = ({ onClose, onEdit }: ModalCajasProps) => {
       });
     }
 
-    onClose();
   };
 
   const handleDownload = async (e: React.FormEvent) => {
@@ -146,11 +138,11 @@ const ModalCajas = ({ onClose, onEdit }: ModalCajasProps) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-3 sm:items-center">
+      <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl sm:p-6">
         {/* Header */}
         <div className="flex justify-between items-center border-b pb-3 mb-4">
-          <h2 className="text-xl font-bold text-gray-800">Crear lote</h2>
+          <div><p className="text-sm font-semibold text-[#c70063]">Turno de caja</p><h2 className="text-xl font-bold text-slate-900">{onEdit ? "Cerrar turno y hacer corte" : "Abrir nuevo turno"}</h2></div>
           <button onClick={onClose} className="p-2 rounded hover:bg-gray-100">
             <img src="/icons/close.png" alt="Cerrar" className="w-5 h-5" />
           </button>
@@ -158,59 +150,52 @@ const ModalCajas = ({ onClose, onEdit }: ModalCajasProps) => {
 
         {/* Formulario */}
         <form onSubmit={handleSubmit}>
-          <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mb-6">
-            <input
+          <p className="mb-5 rounded-xl bg-slate-50 p-3 text-sm text-slate-600">{onEdit ? "Verifica el turno antes de cerrarlo. Después del corte no se podrán agregar más ventas ni retiros." : "Se generará un folio automático para identificar todas las ventas y movimientos de este turno."}</p>
+          <div className="mb-6 grid grid-cols-1 gap-4">
+            <label>Operador<input
               type="text"
               name="operador"
               value={formData.operador}
               onChange={handleChange}
-              placeholder="Nombre del operador"
+              placeholder="Operador"
+              readOnly
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
-            />
-            <input
+            /></label>
+            <label>Folio del turno<input
               type="text"
               name="lote"
               value={formData.lote}
               onChange={handleChange}
-              placeholder="Lote"
+              placeholder="Folio"
+              readOnly
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
-            />
-            <input
+            /></label>
+            <label>Fecha<input
               type="date"
               name="fecha"
               value={formData.fecha}
               onChange={handleChange}
               placeholder="Fecha"
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
-            />
+            /></label>
 
-            <select
-              name="estado"
-              value={String(formData.estado)}
-              onChange={(e) =>
-                setFormData({ ...formData, estado: e.target.value === "true" })
-              }
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
-            >
-              <option value="true">Abierto</option>
-              <option value="false">Cerrado</option>
-            </select>
           </div>
 
           {/* Botón guardar */}
-          <div className="flex justify-center mt-6 gap-4">
+          <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-500 transition"
+              className="rounded-xl bg-[#c70063] px-5 py-2.5 font-semibold text-white hover:bg-[#a90054]"
             >
-              Guardar lote
+              {onEdit ? "Confirmar corte y cerrar" : "Abrir turno"}
             </button>
-            <button
+            {onEdit && <button
+              type="button"
               onClick={handleDownload}
-              className="px-4 py-2 bg-yellow-300 text-black rounded hover:bg-yellow-200 transition"
+              className="rounded-xl border border-slate-300 px-5 py-2.5 font-semibold text-slate-700 hover:bg-slate-50"
             >
-              Descargar lote
-            </button>
+              Descargar resumen
+            </button>}
           </div>
         </form>
       </div>

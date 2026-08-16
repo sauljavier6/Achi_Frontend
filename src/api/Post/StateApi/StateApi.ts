@@ -1,4 +1,4 @@
-const token = localStorage.getItem('token')
+const token = { toString: () => localStorage.getItem('token') || '' }
 
 export const getStates = async () => {
   const res = await fetch(`${import.meta.env.VITE_API_URL}/state`, {

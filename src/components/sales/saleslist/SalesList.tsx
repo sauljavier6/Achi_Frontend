@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { getSale } from "../../../api/Post/SaleApi/SaleApi";
 import { useEffect, useState } from "react";
+import { formatFolio } from "../../../utils/folio";
 
 export interface ISale {
   ID_Sale: number;
@@ -82,7 +83,7 @@ const SalesList = ({onSelected, resetChecks, onResetComplete, searchTerm }:SaleL
               onChange={handleSelectAll}
               />
             </th>
-            <th className="px-2 py-2">Numero Venta</th>
+            <th className="px-2 py-2">Folio</th>
             <th className="px-2 py-2">Cliente</th>
             <th className="px-2 py-2">Total</th>
             <th className="px-2 py-2">Deuda</th>
@@ -99,12 +100,12 @@ const SalesList = ({onSelected, resetChecks, onResetComplete, searchTerm }:SaleL
                   onClick={(e) => e.stopPropagation()}
                 />
               </td>
-              <td className="px-2 py-2">{prod.ID_Sale}</td>
+              <td className="px-2 py-2 font-mono font-bold">{formatFolio(prod.ID_Sale)}</td>
               <td className="px-2 py-2">{prod.ID_User? prod.user.Name: "Cliente no asignado"}</td>
               <td className="px-2 py-2">{prod.Total}</td>
               <td className="px-2 py-2">${prod.Balance_Total}</td>
               <td className="px-2 py-2">{prod.operator?.Name}</td>
-              <td className="px-2 py-2">{prod.Batch}</td>
+              <td className="px-2 py-2 font-mono">{prod.Batch === "web" ? "Web" : prod.Batch.replace(/-/g, "")}</td>
             </tr>
           ))}
         </tbody>
@@ -137,7 +138,7 @@ const SalesList = ({onSelected, resetChecks, onResetComplete, searchTerm }:SaleL
                 onClick={() => setPage(num)}
                 className={`px-3 py-1 rounded ${
                   page === num
-                    ? "bg-blue-500 text-white"
+                    ? "bg-[#c70063] text-white"
                     : "bg-gray-200 hover:bg-gray-300"
                 }`}
               >

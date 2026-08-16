@@ -1,4 +1,4 @@
-const token = localStorage.getItem('token')
+const token = { toString: () => localStorage.getItem('token') || '' }
 
 interface SaleItem {
   productId: number;
@@ -21,11 +21,14 @@ interface SaleData {
   Balance_Total: number;
   Subtotal: number,
   Iva: number,
+  Envio?: number,
   ID_State: number;
   Payment: PaymentSale[];
   ID_Operador: number;
   Lote: string;
   items: SaleItem[];
+  IsCredit?: boolean;
+  SourceQuoteId?: number;
 }
 
 
@@ -211,9 +214,12 @@ export const printRemision = async (ID_Sale: number ) => {
     },
   });
 
-  const blob = await res.blob();
-  console.log("BLOB TYPE:", blob.type);  // ← MUY IMPORTANTE
+  if (!res.ok) {
+    const error = await res.json().catch(() => null);
+    throw new Error(error?.message || "Error al generar la remisión");
+  }
 
+  const blob = await res.blob();
   const url = window.URL.createObjectURL(blob);
   const link = document.createElement("a");
 
@@ -223,6 +229,7 @@ export const printRemision = async (ID_Sale: number ) => {
   link.click();
 
   link.remove();
+  window.URL.revokeObjectURL(url);
 };
 
 

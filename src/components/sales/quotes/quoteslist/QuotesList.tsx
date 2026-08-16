@@ -1,184 +1,87 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { getQuotes } from "../../../../api/Post/QuotesApi/QuotesApi";
+import { formatFolio } from "../../../../utils/folio";
 
-export interface ISale {
+interface QuoteUser { ID_User: number; Name: string; }
+interface QuoteRow {
   ID_Sale: number;
-  Name: string;
+  ID_User?: number | null;
+  Total: number | string;
+  Balance_Total: number | string;
+  ID_Operador?: number | null;
+  Batch?: string;
+  user?: QuoteUser | null;
+  operator?: QuoteUser | null;
+  DocumentStatus?: string;
+  ConvertedSaleId?: number | null;
 }
 
-export interface ISale {
-  operator: ISale;
-  user: ISale;
-  ID_Sale: number;
-  ID_User?: number;
-  Total: number;
-  Balance_Total: number;
-  ID_State: number;
-  State?: boolean;
-  ID_Operador: number;
-  Batch: string;
-}
-
-interface SaleListProps {
+interface QuoteListProps {
   onSelected: (ids: number[]) => void;
   resetChecks: boolean;
   onResetComplete: () => void;
   searchTerm: string;
 }
 
-const SalesList = ({
-  onSelected,
-  resetChecks,
-  onResetComplete,
-  searchTerm,
-}: SaleListProps) => {
+const currency = new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" });
+
+export default function QuotesList({ onSelected, resetChecks, onResetComplete, searchTerm }: QuoteListProps) {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [page, setPage] = useState(1);
   const limit = 10;
-
-  const { data } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ["quotes", page, limit, searchTerm],
     queryFn: () => getQuotes({ page, limit, searchTerm }),
-    placeholderData: (prev) => prev,
+    placeholderData: (previous) => previous,
   });
+  const rows: QuoteRow[] = data?.data ?? [];
 
+  useEffect(() => { setPage(1); setSelectedIds([]); }, [searchTerm]);
+  useEffect(() => { onSelected(selectedIds); }, [selectedIds, onSelected]);
   useEffect(() => {
     if (resetChecks) {
       setSelectedIds([]);
-      onSelected([]);
       onResetComplete();
     }
-  }, [resetChecks]);
+  }, [resetChecks, onResetComplete]);
 
-  useEffect(() => {
-    onSelected(selectedIds);
-  }, [selectedIds]);
-
-  const handleCheckboxChange = (id: number) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
-  };
-
-  const handleSelectAll = () => {
-    if (!data?.data) return;
-
-    if (selectedIds.length === data.data.length) {
-      setSelectedIds([]);
-    } else {
-      const allIds = data.data.map((prod: ISale) => prod.ID_Sale);
-      setSelectedIds(allIds);
-    }
-  };
+  const allSelected = rows.length > 0 && rows.every((row) => selectedIds.includes(row.ID_Sale));
 
   return (
-    <>
-      <div className="overflow-x-auto border rounded-md shadow-sm">
-        <table className="min-w-full text-sm text-left">
-          <thead className="bg-gray-100 text-gray-700 uppercase">
+    <div className="min-w-0">
+      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+        <table className="min-w-[760px] w-full text-left text-sm">
+          <thead>
             <tr>
-              <th className="px-2 py-2">
-                <input
-                  type="checkbox"
-                  checked={
-                    selectedIds.length === data?.data?.length &&
-                    data?.data?.length > 0
-                  }
-                  onChange={handleSelectAll}
-                />
-              </th>
-              <th className="px-2 py-2">Num Cotización</th>
-              <th className="px-2 py-2">Cliente</th>
-              <th className="px-2 py-2">Total</th>
-              <th className="px-2 py-2">Deuda</th>
-              <th className="px-2 py-2">Cajero</th>
-              <th className="px-2 py-2">Lote</th>
+              <th className="w-12"><input aria-label="Seleccionar todas las cotizaciones" type="checkbox" checked={allSelected} onChange={() => setSelectedIds(allSelected ? [] : rows.map((row) => row.ID_Sale))} /></th>
+              <th>Folio</th><th>Cliente</th><th>Total</th><th>Operador</th><th>Estado</th><th>Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {data?.data?.map((prod: ISale) => (
-              <tr key={prod.ID_Sale} className="border-t">
-                <td className="px-2 py-2">
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.includes(prod.ID_Sale)}
-                    onChange={() => handleCheckboxChange(prod.ID_Sale)}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </td>
-                <td className="px-2 py-2">{prod.ID_Sale}</td>
-                <td className="px-2 py-2">
-                  {prod.ID_User ? prod.user.Name : "Cliente no asignado"}
-                </td>
-                <td className="px-2 py-2">{prod.Total}</td>
-                <td className="px-2 py-2">${prod.Balance_Total}</td>
-                <td className="px-2 py-2">{prod.operator.Name}</td>
-                <td className="px-2 py-2">{prod.Batch}</td>
+            {rows.map((quote) => (
+              <tr key={quote.ID_Sale} onClick={() => setSelectedIds([quote.ID_Sale])} className={`cursor-pointer ${selectedIds.includes(quote.ID_Sale) ? "bg-[#c70063]/5" : ""}`}>
+                <td><input aria-label={`Seleccionar cotización ${quote.ID_Sale}`} type="checkbox" checked={selectedIds.includes(quote.ID_Sale)} onChange={() => setSelectedIds((current) => current.includes(quote.ID_Sale) ? current.filter((id) => id !== quote.ID_Sale) : [...current, quote.ID_Sale])} onClick={(event) => event.stopPropagation()} /></td>
+                <td><span className="font-mono font-bold text-slate-900">{formatFolio(quote.ID_Sale)}</span></td>
+                <td>{quote.user?.Name || <span className="text-slate-400">Público general</span>}</td>
+                <td className="font-semibold text-slate-900">{currency.format(Number(quote.Total) || 0)}</td>
+                <td>{quote.operator?.Name || <span className="text-slate-400">Sin asignar</span>}</td>
+                <td>{quote.DocumentStatus === "CONVERTED" ? <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">Venta {formatFolio(quote.ConvertedSaleId)}</span> : <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700">Activa</span>}</td>
+                <td><button type="button" disabled={quote.DocumentStatus === "CONVERTED" || Boolean(quote.ConvertedSaleId)} onClick={(event) => { event.stopPropagation(); window.location.assign(`/pos/cajas?quote=${quote.ID_Sale}`); }} className="rounded-xl border border-[#007782]/30 px-3 py-2 text-xs font-bold text-[#007782] hover:bg-[#007782]/5 disabled:cursor-not-allowed disabled:opacity-40">Convertir en venta</button></td>
               </tr>
             ))}
           </tbody>
         </table>
+        {isLoading && <div className="p-8 text-center text-sm text-slate-500">Cargando cotizaciones…</div>}
+        {isError && <div className="p-8 text-center text-sm text-red-600">{error instanceof Error ? error.message : "No fue posible cargar las cotizaciones"}</div>}
+        {!isLoading && !isError && rows.length === 0 && <div className="p-10 text-center"><p className="font-semibold text-slate-700">No hay cotizaciones</p><p className="mt-1 text-sm text-slate-500">Crea una nueva o cambia el criterio de búsqueda.</p></div>}
       </div>
-      <div className="flex justify-end items-center mt-4 space-x-2">
-        <button
-          disabled={page === 1}
-          onClick={() => setPage((old) => Math.max(old - 1, 1))}
-          className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50 flex items-center justify-center"
-        >
-          <img
-            src="/icons/flecha-negra.png"
-            alt="Anterior"
-            className="w-4 h-4"
-          />
-        </button>
 
-        {data && data.totalPages >= 1 && (
-          <>
-            {(() => {
-              const maxButtons = 5;
-              let start = Math.max(1, page - Math.floor(maxButtons / 2));
-              let end = start + maxButtons - 1;
-
-              if (end > data.totalPages) {
-                end = data.totalPages;
-                start = Math.max(1, end - maxButtons + 1);
-              }
-
-              return Array.from(
-                { length: end - start + 1 },
-                (_, i) => start + i
-              ).map((num) => (
-                <button
-                  key={num}
-                  onClick={() => setPage(num)}
-                  className={`px-3 py-1 rounded ${
-                    page === num
-                      ? "bg-blue-500 text-white"
-                      : "bg-gray-200 hover:bg-gray-300"
-                  }`}
-                >
-                  {num}
-                </button>
-              ));
-            })()}
-          </>
-        )}
-
-        <button
-          disabled={page >= (data?.totalPages || 1)}
-          onClick={() => setPage((old) => old + 1)}
-          className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50 flex items-center justify-center"
-        >
-          <img
-            src="/icons/flecha-negra.png"
-            alt="Siguiente"
-            className="w-4 h-4 transform rotate-180"
-          />
-        </button>
-      </div>
-    </>
+      {(data?.totalPages ?? 1) > 1 && <div className="mt-4 flex items-center justify-end gap-2">
+        <button aria-label="Página anterior" disabled={page === 1} onClick={() => setPage((current) => Math.max(1, current - 1))} className="border border-slate-200 bg-white px-3 py-2 disabled:opacity-40">←</button>
+        <span className="px-2 text-sm text-slate-600">Página {page} de {data.totalPages}</span>
+        <button aria-label="Página siguiente" disabled={page >= data.totalPages} onClick={() => setPage((current) => current + 1)} className="border border-slate-200 bg-white px-3 py-2 disabled:opacity-40">→</button>
+      </div>}
+    </div>
   );
-};
-
-export default SalesList;
+}

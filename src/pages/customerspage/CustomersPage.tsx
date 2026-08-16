@@ -82,7 +82,7 @@ const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
           });
       },
       onSuccess: () => {
-          toast.success("Cliente(s) eliminado(s) con éxito", {
+          toast.success("Cliente(s) eliminado(s) correctamente", {
           position: "top-right",
           progressClassName: "custom-progress",
           });
@@ -107,7 +107,8 @@ const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 
   const handleDelete = async () => {
     try {
-      alert(`¿Estás seguro de que deseas eliminar cliente(s)?`);
+      const label = isEdit.length === 1 ? "este cliente" : `estos ${isEdit.length} clientes`;
+      if (!window.confirm(`¿Deseas eliminar ${label}? Esta acción no se puede deshacer.`)) return;
       customerDeleteMutate(isEdit);
     } catch (error) {
       toast.error((error as Error).message);
@@ -115,14 +116,15 @@ const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   };
 
   return (
-    <div className="p-4 bg-gray-50 rounded-lg">
+    <section className="min-w-0 rounded-2xl border border-slate-200/70 bg-white p-3 sm:p-4">
       <div className="flex flex-col lg:flex-row md:items-center md:justify-between mb-4 gap-2">
-        <h1 className={styles.title}>Clientes</h1>
+        <div><p className="text-sm font-semibold text-[#c70063]">Ventas</p><h1 className="text-2xl font-bold text-slate-900">Clientes</h1><p className="text-sm text-slate-500">Consulta y actualiza los datos de tus clientes.</p></div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
           <input
             type="text"
-            placeholder="Buscar cliente..."
+            placeholder="Buscar por nombre, teléfono o correo"
+            aria-label="Buscar clientes"
             value={searchTerm}
             onChange={handleSearchChange}
             className="px-3 py-2 border border-gray-300 rounded-md w-full"
@@ -132,7 +134,7 @@ const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
             onClick={handleCreateCustomer}
             className={styles.buttonCrearProducto}
           >
-            Crear
+            Nuevo cliente
           </button>
           )}
           {(isAdmin || isTrabajador) && (
@@ -142,7 +144,7 @@ const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
             className={`px-4 py-2 rounded font-semibold transition 
               ${isEdit.length === 0 || isEdit.length > 1
                 ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
-                : 'bg-green-600 text-white hover:bg-green-700'}`}
+                : 'rounded-xl bg-[#007782] text-white hover:bg-[#00636c]'}`}
           >
             Editar
           </button>
@@ -154,7 +156,7 @@ const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
             className={`px-4 py-2 rounded font-semibold transition
               ${isEdit.length === 0
                 ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
-                : 'bg-red-600 text-white hover:bg-red-700'}`}
+                : 'rounded-xl border border-red-600 bg-red-600 text-white hover:bg-red-700'}`}
           >
             Eliminar
           </button>
@@ -166,11 +168,9 @@ const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       onResetComplete={() => setResetChecks(false)} searchTerm={searchTerm}/>
 
       {modalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <ModalCustomers onClose={handleClose} onSave={handleSaveCustomer} onEdit={isEdit.length > 0 ? isEdit[0] : undefined}/>
-        </div>
+        <ModalCustomers onClose={handleClose} onSave={handleSaveCustomer} onEdit={isEdit.length > 0 ? isEdit[0] : undefined}/>
       )}
-    </div>
+    </section>
   );
 };
 

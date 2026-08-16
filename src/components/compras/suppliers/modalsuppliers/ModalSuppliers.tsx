@@ -24,51 +24,31 @@ const ModalSuppliers = ({ onClose, onSave, onEdit }: ModalCajasProps) => {
     Email: "",
     Phone: "",
   });
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const [emailMessage, setEmailMessage] = useState("");
 
-
-  useEffect(() => {
-    const fetchCustomer = async () => {
-      try {
-        const email = formData?.Email?.trim();
-
-        if (!email) {
-          resetUser(email);
-          return;
-        }
-
-        const supplierData = await getSupplier(email);
-        const data = supplierData?.data;
-
-        if (data) {
-          setFormData(prev => ({
-            ...prev,
-            ID_User: data.ID_User,
-            Name: data.Name || "",
-            Phone: data.Phone?.Description || "",
-            Email: data.Email?.Description || email,
-          }));
-        } else {
-          resetUser(email);
-        }
-
-      } catch (error) {
-        console.error("Error fetching customer data:", error);
-        resetUser(formData?.Email?.trim());
+  const handleEmailBlur = async () => {
+    const email = formData.Email.trim().toLowerCase();
+    if (onEdit || !email || !/^\S+@\S+\.\S+$/.test(email)) return;
+    setIsCheckingEmail(true);
+    setEmailMessage("");
+    try {
+      const supplierData = await getSupplier(email);
+      const data = supplierData?.data;
+      if (!data) {
+        setFormData((previous) => ({ ...previous, Email: email, ID_User: undefined }));
+        setEmailMessage("Correo disponible para un proveedor nuevo.");
+        return;
       }
-    };
-
-    const resetUser = (email = "") => {
-      setFormData(prev => ({
-        ...prev,
-        ID_User: undefined,
-        Name: "",
-        Phone: "",
-        Email: email
-      }));
-    };
-
-    fetchCustomer();
-  }, [formData?.Email]);
+      setFormData((previous) => ({ ...previous, ID_User: data.ID_User, Name: data.Name || previous.Name, Phone: data.Phone?.Description || previous.Phone, Email: data.Email?.Description || email }));
+      setEmailMessage("Proveedor existente encontrado; cargamos sus datos.");
+    } catch (error) {
+      console.error("Error verificando proveedor:", error);
+      setEmailMessage("No fue posible verificar el correo. Puedes volver a intentarlo.");
+    } finally {
+      setIsCheckingEmail(false);
+    }
+  };
 
 
 
@@ -105,7 +85,7 @@ const ModalSuppliers = ({ onClose, onSave, onEdit }: ModalCajasProps) => {
     onSuccess: (data) => {
       onSave?.(data.data.ID_User)
       handleClose()
-      toast.success("Proveedor creado con éxito", {
+      toast.success("Proveedor creado correctamente", {
       position: "top-right",
       progressClassName: "custom-progress",
       });
@@ -123,7 +103,7 @@ const ModalSuppliers = ({ onClose, onSave, onEdit }: ModalCajasProps) => {
     onSuccess: (data) => {
         onSave?.(data.data.ID_User)
         handleClose()
-        toast.success("proveedor actualizado con éxito", {
+        toast.success("Proveedor actualizado correctamente", {
         position: "top-right",
         progressClassName: "custom-progress",
         });
@@ -157,13 +137,13 @@ const ModalSuppliers = ({ onClose, onSave, onEdit }: ModalCajasProps) => {
   const isPersonalDataComplete = formData.Name.trim() !== "" && formData.Phone.trim() !== "" && formData.Email.trim() !== "";
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
-      <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md sm:max-w-lg md:max-w-xl">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-3 sm:items-center">
+      <div className="w-full max-w-xl rounded-2xl bg-white p-5 shadow-2xl sm:p-6">
         
         {/* Header */}
         <div className="flex justify-between items-center border-b pb-3 mb-4">
-          <h2 className="text-xl font-bold text-gray-800">Crear Proveedor</h2>
-          <button onClick={handleClose} className="p-2 rounded hover:bg-gray-100">
+          <div><p className="text-sm font-semibold text-[#c70063]">Proveedores</p><h2 className="text-xl font-bold text-slate-900">{onEdit ? "Editar proveedor" : "Nuevo proveedor"}</h2></div>
+          <button type="button" onClick={handleClose} aria-label="Cerrar modal" className="p-2 rounded-full hover:bg-gray-100">
             <img src="/icons/close.png" alt="Cerrar" className="w-5 h-5" />
           </button>
         </div>
@@ -182,12 +162,16 @@ const ModalSuppliers = ({ onClose, onSave, onEdit }: ModalCajasProps) => {
                 type="email"
                 value={formData.Email}
                 onChange={(event) =>
-                  setFormData((prev) => ({ ...prev, Email: event.target.value }))
+                  setFormData((prev) => ({ ...prev, Email: event.target.value, ID_User: onEdit ? prev.ID_User : undefined }))
                 }
-                placeholder="Correo"
+                onBlur={handleEmailBlur}
+                placeholder="proveedor@correo.com"
+                autoComplete="email"
                 required
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
               />
+              {isCheckingEmail && <p className="mt-1 text-xs text-slate-500">Verificando correo…</p>}
+              {!isCheckingEmail && emailMessage && <p className="mt-1 text-xs text-slate-600">{emailMessage}</p>}
             </div>
 
             {/* Nombre */}
@@ -202,7 +186,8 @@ const ModalSuppliers = ({ onClose, onSave, onEdit }: ModalCajasProps) => {
                 onChange={(event) =>
                   setFormData((prev) => ({ ...prev, Name: event.target.value }))
                 }
-                placeholder="Nombre del proveedor"
+                placeholder="Nombre o razón social"
+                autoComplete="organization"
                 required
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
               />
@@ -228,6 +213,7 @@ const ModalSuppliers = ({ onClose, onSave, onEdit }: ModalCajasProps) => {
                 minLength={10}
                 maxLength={10}
                 inputMode="numeric"
+                autoComplete="tel"
                 pattern="[0-9]{10}"
                 title="Debe contener exactamente 10 dígitos numéricos"
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -236,13 +222,13 @@ const ModalSuppliers = ({ onClose, onSave, onEdit }: ModalCajasProps) => {
           </div>
 
           {/* Botón */}
-          <div className="flex justify-center mt-6">
+          <div className="mt-6 flex justify-end">
             <button
               type="submit"
               className={`${styles.submitButton} ${
-                !isPersonalDataComplete ? 'opacity-50 cursor-not-allowed' : ''
+                !isPersonalDataComplete || isCheckingEmail ? 'opacity-50 cursor-not-allowed' : ''
               }`}
-              disabled={!isPersonalDataComplete}
+              disabled={!isPersonalDataComplete || isCheckingEmail}
             >
               Guardar proveedor
             </button>

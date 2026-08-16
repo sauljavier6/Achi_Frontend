@@ -27,6 +27,7 @@ import RoleRoute from "./RoleRoute";
 import CategoryPage from "../pages/categorypage/CategoryPage";
 import AdminLayout from "../layouts/AdminLayout";
 import PaymentPage from "../pages/paymentpage/PaymentPage";
+import PaymentResultPage from "../pages/paymentpage/PaymentResultPage";
 import SubCategoryPage from "../pages/subcategorypage/SubCategoryPage";
 
 const AppRoutes = () => {
@@ -43,7 +44,8 @@ const AppRoutes = () => {
         <Route path="productos/:id" element={<EProductsPage />} />
         <Route path="carrito" element={<CartPage />} />
         <Route path="detalles/:id" element={<ProductDetails />} />
-        <Route path="stripe" element={<PaymentPage />} />
+        <Route path="pago" element={<PaymentPage />} />
+        <Route path="pago/resultado" element={<PaymentResultPage />} />
         <Route path="cotizaciones" element={<QuotesCart />} />
         <Route path="nosotros" element={<WePage />} />
       </Route>
@@ -72,7 +74,7 @@ const AppRoutes = () => {
       </Route>
 
       {/* Redirección */}
-      <Route path="*" element={<Navigate to="/dashboard" />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 };

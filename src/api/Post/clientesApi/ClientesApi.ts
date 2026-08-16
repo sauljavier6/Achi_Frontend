@@ -1,4 +1,4 @@
-const token = localStorage.getItem('token')
+const token = { toString: () => localStorage.getItem('token') || '' }
 
 export const getClientes = async ({ page = 1, limit = 10, searchTerm='' }) => {
   const res = await fetch(`${import.meta.env.VITE_API_URL}/clientes?page=${page}&limit=${limit}&searchTerm=${searchTerm}`, {
@@ -18,13 +18,17 @@ export const getClientes = async ({ page = 1, limit = 10, searchTerm='' }) => {
 };
 
 export const getCustomerSale = async (email: string) => {
-  const res = await fetch(`${import.meta.env.VITE_API_URL}/clientes/search?email=${email}`, {
+  const res = await fetch(`${import.meta.env.VITE_API_URL}/clientes/search?email=${encodeURIComponent(email)}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     }
   });
+
+  if (res.status === 404) {
+    return { data: null };
+  }
 
   if (!res.ok) {
     const error = await res.json();

@@ -1,6 +1,5 @@
 
 import { useState } from "react";
-import styles from "./SuppliersPage.module.scss";
 import SuppliersList from "../../components/compras/suppliers/supplierslist/SuppliersList";
 import ModalSuppliers from "../../components/compras/suppliers/modalsuppliers/ModalSuppliers";
 import { toast } from "react-toastify";
@@ -25,7 +24,7 @@ const SuppliersPage = () => {
         });
     },
     onSuccess: () => {
-        toast.success("Proveedor eliminado con éxito", {
+        toast.success("Proveedor(es) eliminado(s) correctamente", {
         position: "top-right",
         progressClassName: "custom-progress",
         });
@@ -42,6 +41,8 @@ const SuppliersPage = () => {
   };
 
   const handleDeleteProduct = () => {
+    const label = selectedIds.length === 1 ? "este proveedor" : `estos ${selectedIds.length} proveedores`;
+    if (!window.confirm(`¿Deseas eliminar ${label}? Esta acción no se puede deshacer.`)) return;
     mutate(selectedIds);
     setSelectedIds([])
   };
@@ -51,19 +52,20 @@ const SuppliersPage = () => {
       setSupplierToEdit(selectedIds[0]);
       setModalOpen(true);
     } else if (selectedIds.length > 1) {
-      toast.warn('Solo puedes editar un producto a la vez');
+      toast.warn('Solo puedes editar un proveedor a la vez');
     }
   };
 
   return (
-    <div className="p-4 bg-gray-50 rounded-lg">
+    <section className="min-w-0 rounded-2xl border border-slate-200/70 bg-white p-3 sm:p-4">
       <div className="flex flex-col lg:flex-row md:items-center md:justify-between mb-4 gap-2">
-        <h1 className={styles.title}>Proveedores</h1>
+        <div><p className="text-sm font-semibold text-[#c70063]">Abastecimiento</p><h1 className="text-2xl font-bold text-slate-900">Proveedores</h1><p className="text-sm text-slate-500">Administra contactos y datos comerciales.</p></div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
           <input
             type="text"
-            placeholder="Buscar proveedor..."
+            placeholder="Buscar por nombre, teléfono o correo"
+            aria-label="Buscar proveedores"
             value={searchTerm}
             onChange={handleSearchChange}
             className="px-3 py-2 border border-gray-300 rounded-md w-full"
@@ -71,9 +73,9 @@ const SuppliersPage = () => {
           {(isAdmin || isTrabajador) && (
           <button
             onClick={handleCreateProveedor}
-            className={styles.buttonCrearProducto}
+            className="rounded-xl bg-[#c70063] px-4 py-2.5 font-semibold text-white hover:bg-[#a90054]"
           >
-            Registrar
+            Nuevo proveedor
           </button>
           )}
           {(isAdmin || isTrabajador) && (
@@ -83,7 +85,7 @@ const SuppliersPage = () => {
             className={`px-4 py-2 rounded font-semibold text-white transition-colors duration-200 
               ${selectedIds.length !== 1
                 ? 'bg-gray-300 text-gray-600 cursor-not-allowed' 
-                : styles.buttonEditarProducto}
+                : 'bg-[#007782] hover:bg-[#00636c]'}
             `}
           >
             Editar
@@ -96,7 +98,7 @@ const SuppliersPage = () => {
             className={`px-4 py-2 rounded font-semibold text-white transition-colors duration-200 
               ${selectedIds?.length === 0 
                 ? 'bg-gray-300 text-gray-600 cursor-not-allowed' 
-                : styles.buttonEliminarProducto}
+                : 'rounded-xl border border-red-600 bg-red-600 text-white hover:bg-red-700'}
             `}
           >
             Eliminar
@@ -111,11 +113,9 @@ const SuppliersPage = () => {
       onResetComplete={() => setResetChecks(false)} searchTerm={searchTerm} />
 
       {modalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <ModalSuppliers onClose={() => setModalOpen(false)} onEdit={supplierToEdit} />
-        </div>
+        <ModalSuppliers onClose={() => setModalOpen(false)} onEdit={supplierToEdit} />
       )}
-    </div>
+    </section>
   );
 };
 

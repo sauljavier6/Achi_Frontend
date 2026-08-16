@@ -1,4 +1,4 @@
-const token = localStorage.getItem('token');
+const token = { toString: () => localStorage.getItem('token') || '' };
 
 export const getCategory = async () => {
   const res = await fetch(`${import.meta.env.VITE_API_URL}/ecommerce/categories`, {
@@ -21,7 +21,7 @@ export const getCategory = async () => {
 
 interface CategoryPayload {
   Description: string;
-  Genero: string;
+  State: boolean;
 }
 
 export const postCategory = async (data: CategoryPayload) => {
@@ -64,7 +64,6 @@ export const getCategoryList = async ({ page = 1, limit = 10, searchTerm='' }) =
 };
 
 export const getCategoryById = async (id: number) => {
-  console.log('id dentro de api', id)
   const res = await fetch(
     `${import.meta.env.VITE_API_URL}/category/${id}`,
     {
