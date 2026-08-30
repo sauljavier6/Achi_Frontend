@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { formatFolio } from "../../utils/folio";
+import { useCart } from "../../context/CartContext";
 
 type ReconcileResult = { message?: string; saleId?: number };
 const reconciliationRequests = new Map<string, Promise<ReconcileResult>>();
@@ -25,6 +26,7 @@ function reconcilePayment(paymentId: string) {
 }
 
 export default function PaymentResultPage() {
+  const { clearCart } = useCart();
   const [params] = useSearchParams();
   const [message, setMessage] = useState("Confirmando tu pago…");
   const [confirmed, setConfirmed] = useState(false);
@@ -37,6 +39,10 @@ export default function PaymentResultPage() {
       return;
     }
     reconcilePayment(paymentId).then((body) => {
+      // El carrito se conserva durante todo el checkout para que el cliente
+      // pueda reintentar si cancela, falla o deja pendiente el pago. Sólo una
+      // conciliación aprobada por el servidor autoriza vaciarlo.
+      clearCart();
       setConfirmed(true);
       setMessage(`Pago confirmado. Pedido ${formatFolio(body.saleId)}.`);
     }).catch((error) => setMessage(error instanceof Error ? error.message : "No fue posible confirmar el pago"));

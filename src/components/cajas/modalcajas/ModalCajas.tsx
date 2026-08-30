@@ -4,7 +4,8 @@ import { toast } from "react-toastify";
 import {
   getBatchbyIs,
   postBatch,
-  putBatch,
+  getBatchSummary,
+  closeBatch,
 } from "../../../api/Post/BatchApi/BatchApi";
 import { getCorteCaja } from "../../../api/Post/InformationApi/InformationApi";
 import { getAuthUser } from "../../../utils/auth";
@@ -23,7 +24,11 @@ const ModalCajas = ({ onClose, onEdit }: ModalCajasProps) => {
     lote: createBatch(),
     fecha: getTodayDate() || "",
     estado: true,
+    fondoInicial: 0,
   });
+  const [summary, setSummary] = useState<any>(null);
+  const [countedCash, setCountedCash] = useState("");
+  const [notes, setNotes] = useState("");
 
 
   useEffect(() => {
@@ -33,7 +38,10 @@ const ModalCajas = ({ onClose, onEdit }: ModalCajasProps) => {
         const res = await getBatchbyIs(onEdit);
         const data = res.data;
         setFormData((prev) => ({ ...prev, lote: data.Lote, estado: data.State ?? data.Estado,
-          fecha: data.Date ? data.Date.slice(0, 10) : "", operador: idusuario }));
+          fecha: data.Date ? data.Date.slice(0, 10) : "", operador: idusuario, fondoInicial: Number(data.OpeningAmount || 0) }));
+        const detail = await getBatchSummary(onEdit);
+        setSummary(detail.summary);
+        setCountedCash(String(detail.summary.expectedCash ?? ""));
       } catch {
         toast.error("No fue posible cargar los datos de la caja.");
       }
@@ -68,32 +76,10 @@ const ModalCajas = ({ onClose, onEdit }: ModalCajasProps) => {
         lote: "",
         fecha: "",
         estado: true,
+        fondoInicial: 0,
       });
       onClose();
       toast.success("Turno de caja abierto correctamente", {
-        position: "top-right",
-        progressClassName: "custom-progress",
-      });
-      queryClient.invalidateQueries({ queryKey: ["batchs"] });
-    },
-  });
-
-  const { mutate: editMutate } = useMutation({
-    mutationFn: putBatch,
-    onError: (error) => {
-      toast.error(`${error.message}`, {
-        position: "top-right",
-      });
-    },
-    onSuccess: () => {
-      setFormData({
-        operador: idusuario,
-        lote: "",
-        fecha: "",
-        estado: true,
-      });
-      onClose();
-      toast.success("Turno de caja cerrado correctamente", {
         position: "top-right",
         progressClassName: "custom-progress",
       });
@@ -114,15 +100,9 @@ const ModalCajas = ({ onClose, onEdit }: ModalCajasProps) => {
     e.preventDefault();
     if (onEdit) {
       if (!window.confirm("¿Confirmas el corte? El turno quedará cerrado y ya no podrá registrar más ventas.")) return;
-      const data = {
-        id_batch: onEdit,
-        operador: idusuario || "",
-        lote: formData.lote,
-        fecha: formData.fecha,
-        estado: false,
-      };
-
-      editMutate(data);
+      closeBatch({ ID_Batch: onEdit, countedCash: Number(countedCash), notes })
+        .then(() => { toast.success("Corte de caja registrado correctamente"); queryClient.invalidateQueries({ queryKey: ["batchs"] }); onClose(); })
+        .catch((error) => toast.error(error.message));
     } else {
       mutate({
         ...formData,
@@ -178,6 +158,22 @@ const ModalCajas = ({ onClose, onEdit }: ModalCajasProps) => {
               placeholder="Fecha"
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
             /></label>
+            {!onEdit && <label>Fondo inicial<input
+              type="number" min="0" step="0.01" name="fondoInicial"
+              value={formData.fondoInicial} onChange={handleChange}
+              placeholder="0.00"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#c70063]/30"
+            /></label>}
+
+            {onEdit && summary && <div className="space-y-3 rounded-xl bg-slate-50 p-4 text-sm">
+              <div className="flex justify-between"><span>Fondo inicial</span><strong>${Number(summary.openingAmount).toFixed(2)}</strong></div>
+              {Object.entries(summary.byMethod || {}).map(([name, value]) => <div key={name} className="flex justify-between"><span>{name}</span><strong>${Number(value).toFixed(2)}</strong></div>)}
+              <div className="flex justify-between text-red-700"><span>Retiros</span><strong>−${Number(summary.withdrawals).toFixed(2)}</strong></div>
+              <div className="border-t border-slate-200 pt-3 flex justify-between text-base"><span>Efectivo esperado</span><strong>${Number(summary.expectedCash).toFixed(2)}</strong></div>
+            </div>}
+            {onEdit && <><label>Efectivo contado<input type="number" min="0" step="0.01" value={countedCash} onChange={(e) => setCountedCash(e.target.value)} required className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#c70063]/30" /></label>
+            <label>Notas del corte<textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Observaciones o explicación de diferencias" className="min-h-20 w-full rounded-md border border-gray-300 px-4 py-2" /></label>
+            {countedCash !== "" && summary && <div className={`rounded-xl p-3 text-sm font-semibold ${Math.abs(Number(countedCash) - Number(summary.expectedCash)) < .01 ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-800"}`}>Diferencia: ${(Number(countedCash) - Number(summary.expectedCash)).toFixed(2)}</div>}</>}
 
           </div>
 

@@ -1,0 +1,6 @@
+const headers = () => ({ "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token") || ""}` });
+const parse = async (response: Response) => { const body = await response.json().catch(() => ({})); if (!response.ok) throw new Error(body.message || "No fue posible completar la operación"); return body; };
+export const getInventoryAlerts = (days = 30) => fetch(`${import.meta.env.VITE_API_URL}/inventory-alerts?days=${days}`, { headers: headers() }).then(parse);
+export const updateMinimumStock = (stockId: number, minimumStock: number) => fetch(`${import.meta.env.VITE_API_URL}/inventory-alerts/stocks/${stockId}/minimum`, { method: "PUT", headers: headers(), body: JSON.stringify({ minimumStock }) }).then(parse);
+export const saveInventoryLot = (payload: { ID_Stock: number; LotNumber: string; Quantity: number; ExpirationDate: string }) => fetch(`${import.meta.env.VITE_API_URL}/inventory-alerts/lots`, { method: "POST", headers: headers(), body: JSON.stringify(payload) }).then(parse);
+export const deactivateInventoryLot = (lotId: number) => fetch(`${import.meta.env.VITE_API_URL}/inventory-alerts/lots/${lotId}`, { method: "DELETE", headers: headers() }).then(parse);

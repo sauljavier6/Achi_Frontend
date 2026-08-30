@@ -1,37 +1,33 @@
-
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import FacturasList from "../../components/facturas/facturaslist/FacturasList";
+import { getPendingComplements, issueGlobalInvoice, issuePaymentComplement, previewGlobalInvoice } from "../../api/Post/FacturacionApi/FacturacionApi";
+
+const today = new Date().toISOString().slice(0, 10);
+const monthStart = `${today.slice(0, 8)}01`;
 
 const FacturasPage = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-  };
-
-
-  return (
-    
-    <section className="min-w-0 rounded-2xl border border-slate-200/70 bg-white p-3 sm:p-4">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
-            <div><p className="text-sm font-semibold text-[#c70063]">Facturación</p><h1 className="text-2xl font-bold text-slate-900">Facturas</h1><p className="text-sm text-slate-500">Consulta comprobantes emitidos y su estado.</p></div>
-
-            <div className="grid grid-cols-1 gap-2">
-            <input
-                type="text"
-                placeholder="Buscar por folio, RFC o cliente"
-                aria-label="Buscar facturas"
-                value={searchTerm}
-                onChange={handleSearchChange}
-                className="px-3 py-2 border border-gray-300 rounded-md w-full"
-            />
-
-            </div>
-        </div>
-
-        <FacturasList searchTerm={searchTerm}/>
-    </section>
-  );
+  const [input, setInput] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [status, setStatus] = useState("ISSUED");
+  const location = useLocation();
+  const tab: "history" | "global" | "payments" = location.pathname.endsWith("facturas-global") ? "global" : location.pathname.endsWith("complementos") ? "payments" : "history";
+  const [from, setFrom] = useState(monthStart); const [to, setTo] = useState(today);
+  const [preview, setPreview] = useState<any>(null); const [busy, setBusy] = useState(false); const [message, setMessage] = useState("");
+  const [payments, setPayments] = useState<any[]>([]);
+  useEffect(() => { const timer = setTimeout(() => setSearchTerm(input.trim()), 350); return () => clearTimeout(timer); }, [input]);
+  useEffect(() => { if (tab === "payments") getPendingComplements().then(result => setPayments(result.data || [])).catch(error => setMessage(error.message)); }, [tab]);
+  const previewGlobal = async () => { setBusy(true); setMessage(""); try { setPreview(await previewGlobalInvoice(`${from}T00:00:00`, `${to}T23:59:59`)); } catch (e) { setMessage(e instanceof Error ? e.message : "Error"); } finally { setBusy(false); } };
+  const emitGlobal = async () => { if (!preview?.count || busy) return; setBusy(true); try { await issueGlobalInvoice({ from: `${from}T00:00:00`, to: `${to}T23:59:59`, periodicity: "04", months: new Date(`${from}T12:00:00`).toLocaleDateString("es-MX", { month: "2-digit" }), year: Number(from.slice(0, 4)) }); setMessage("Factura global emitida correctamente"); setPreview(null); } catch (e) { setMessage(e instanceof Error ? e.message : "Error"); } finally { setBusy(false); } };
+  const emitComplement = async (id: number) => { setBusy(true); try { await issuePaymentComplement(id); setPayments(items => items.filter(item => item.ID_PaymentSale !== id)); setMessage("Complemento emitido correctamente"); } catch (e) { setMessage(e instanceof Error ? e.message : "Error"); } finally { setBusy(false); } };
+  return <section className="billing-module min-w-0 rounded-2xl border border-slate-200/70 bg-white p-3 sm:p-5">
+    {message && <div className="mb-4 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-900">{message}</div>}
+    {tab === "global" && <div><div className="mb-5"><p className="text-sm font-semibold text-[#c70063]">Público en general</p><h1 className="text-2xl font-bold">Factura global</h1><p className="text-sm text-slate-500">Sólo incluye ventas liquidadas sin CFDI individual. Primero revisa el corte y después emite.</p></div><div className="grid gap-3 sm:grid-cols-2"><label className="text-sm font-semibold">Desde<input type="date" value={from} onChange={e => { setFrom(e.target.value); setPreview(null); }} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal"/></label><label className="text-sm font-semibold">Hasta<input type="date" value={to} onChange={e => { setTo(e.target.value); setPreview(null); }} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal"/></label></div><button disabled={busy} onClick={previewGlobal} className="mt-4 rounded-lg border border-[#087f88] px-5 py-2.5 font-bold text-[#087f88] disabled:opacity-50">{busy ? "Revisando…" : "Revisar ventas"}</button>{preview && <div className="mt-5 rounded-xl bg-slate-50 p-4"><div className="flex justify-between"><span>{preview.count} ventas elegibles</span><strong>{Number(preview.total).toLocaleString("es-MX", { style: "currency", currency: "MXN" })}</strong></div><div className="mt-3 max-h-64 overflow-auto rounded-xl border border-slate-200 bg-white"><table className="w-full text-sm"><thead className="sticky top-0 bg-slate-100 text-left text-xs uppercase text-slate-500"><tr><th className="px-3 py-2">Ticket</th><th className="px-3 py-2">Fecha</th><th className="px-3 py-2 text-right">Importe fiscal</th></tr></thead><tbody>{(preview.data || []).map((sale: any) => <tr key={sale.ID_Sale} className="border-t border-slate-100"><td className="px-3 py-2 font-semibold">{sale.Folio}</td><td className="px-3 py-2 text-slate-500">{new Date(sale.Fecha).toLocaleString("es-MX")}</td><td className="px-3 py-2 text-right font-semibold">{Number(sale.Total).toLocaleString("es-MX", { style: "currency", currency: "MXN" })}</td></tr>)}</tbody></table></div><p className="mt-2 text-xs text-slate-500">El CFDI incluirá una línea por ticket y bloqueará estas ventas para impedir duplicados.</p><button disabled={busy || !preview.count} onClick={emitGlobal} className="mt-4 w-full rounded-lg bg-[#c70063] px-5 py-3 font-bold text-white disabled:opacity-40">{busy ? "Emitiendo…" : "Emitir factura global"}</button></div>}</div>}
+    {tab === "payments" && <div><div className="mb-5"><p className="text-sm font-semibold text-[#c70063]">Ventas PPD</p><h1 className="text-2xl font-bold">Complementos de pago</h1><p className="text-sm text-slate-500">Abonos pendientes de timbrar. La emisión siempre requiere confirmación manual.</p></div><div className="space-y-3">{!payments.length && <div className="rounded-xl bg-slate-50 p-6 text-center text-slate-500">No hay abonos pendientes.</div>}{payments.map(item => <div key={item.ID_PaymentSale} className="flex flex-col gap-3 rounded-xl border border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between"><div><strong>Venta {String(item.ID_Sale).padStart(6, "0")}</strong><p className="text-sm text-slate-500">{item.Payment?.Description || item.Description} · {Number(item.Monto).toLocaleString("es-MX", { style: "currency", currency: "MXN" })}</p></div><button disabled={busy} onClick={() => emitComplement(item.ID_PaymentSale)} className="rounded-lg bg-[#c70063] px-4 py-2.5 font-bold text-white disabled:opacity-50">{busy ? "Emitiendo…" : "Emitir complemento"}</button></div>)}</div></div>}
+    {tab === "history" && <>
+    <div className="mb-5 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between"><div><p className="text-sm font-semibold text-[#c70063]">Facturación</p><h1 className="text-2xl font-bold text-slate-900">Comprobantes fiscales</h1><p className="text-sm text-slate-500">Consulta, descarga y envía los CFDI emitidos.</p></div><div className="grid gap-2 sm:grid-cols-[minmax(260px,1fr)_210px]"><label className="text-xs font-bold text-slate-500">Buscar<input value={input} onChange={e => setInput(e.target.value)} placeholder="Folio, UUID, venta, RFC o cliente" className="mt-1 w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-normal"/></label><label className="text-xs font-bold text-slate-500">Estado<select value={status} onChange={e => setStatus(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-normal"><option value="ISSUED">Comprobantes emitidos</option><option value="STAMPED">Timbradas</option><option value="CANCELLATION_REQUESTED">Cancelación pendiente</option><option value="CANCELLED">Canceladas</option><option value="ERROR">Intentos con error</option><option value="">Todos los registros</option></select></label></div></div>
+    <FacturasList searchTerm={searchTerm} status={status}/>
+    </>}
+  </section>;
 };
-
 export default FacturasPage;

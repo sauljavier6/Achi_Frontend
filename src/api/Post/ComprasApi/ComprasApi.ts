@@ -1,3 +1,4 @@
+import { idempotencyKey } from '../../../utils/idempotency';
 const token = { toString: () => localStorage.getItem('token') || '' }
 
 interface Payment {
@@ -35,7 +36,8 @@ export const postCompra = async (saleData:buyData) => {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+      'Authorization': `Bearer ${token}`,
+      'Idempotency-Key': idempotencyKey('purchase', saleData)
     },
     body: JSON.stringify(saleData),
   });

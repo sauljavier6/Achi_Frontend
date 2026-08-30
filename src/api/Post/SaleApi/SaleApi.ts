@@ -1,3 +1,4 @@
+import { idempotencyKey } from '../../../utils/idempotency';
 const token = { toString: () => localStorage.getItem('token') || '' }
 
 interface SaleItem {
@@ -29,6 +30,7 @@ interface SaleData {
   items: SaleItem[];
   IsCredit?: boolean;
   SourceQuoteId?: number;
+  CouponCode?: string;
 }
 
 
@@ -42,7 +44,8 @@ export const postPaymentSale = async (saleData:PaymentSaleData) => {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+      'Authorization': `Bearer ${token}`,
+      'Idempotency-Key': idempotencyKey('sale-payment', saleData)
     },
     body: JSON.stringify(saleData),
   });
@@ -55,8 +58,8 @@ export const postPaymentSale = async (saleData:PaymentSaleData) => {
   return await res.json();
 };
 
-export const searchProducts = async (query: string) => {
-  const res = await fetch(`${import.meta.env.VITE_API_URL}/sale/search?q=${query}`, {
+export const searchProducts = async (query: string, includeOutOfStock = false) => {
+  const res = await fetch(`${import.meta.env.VITE_API_URL}/sale/search?q=${encodeURIComponent(query)}&includeOutOfStock=${includeOutOfStock}`, {
     headers: {
         'Authorization': `Bearer ${token}`
     }
@@ -71,7 +74,8 @@ export const postSale = async (saleData:SaleData) => {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+      'Authorization': `Bearer ${token}`,
+      'Idempotency-Key': idempotencyKey('sale', saleData)
     },
     body: JSON.stringify(saleData),
   });
@@ -96,7 +100,7 @@ interface CustomerFormData {
 }
 
 interface CustomerSaleData extends CustomerFormData {
-  ID_Sale: number;
+  ID_Sale?: number;
 }
 
 export const postCustomerSale = async (customersSaleData:CustomerFormData) => {
@@ -233,13 +237,14 @@ export const printRemision = async (ID_Sale: number ) => {
 };
 
 
-export const pathStateWebSale = async (ID_Sale: number) => {
+export const pathStateWebSale = async (ID_Sale: number, status = "DELIVERED") => {
   const res = await fetch(`${import.meta.env.VITE_API_URL}/saleweb/completar/${ID_Sale}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     },
+    body: JSON.stringify({ status }),
   });
 
   if (!res.ok) {
@@ -248,4 +253,20 @@ export const pathStateWebSale = async (ID_Sale: number) => {
   }
 
   return await res.json();
+};
+
+export const cancelSale = async (ID_Sale: number, reason: string) => {
+  const payload = { reason };
+  const res = await fetch(`${import.meta.env.VITE_API_URL}/sale/${ID_Sale}/cancel`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+      'Idempotency-Key': idempotencyKey(`sale-cancel-${ID_Sale}`, payload),
+    },
+    body: JSON.stringify(payload),
+  });
+  const body = await res.json();
+  if (!res.ok) throw new Error(body.message || 'No fue posible cancelar la venta');
+  return body;
 };

@@ -298,7 +298,7 @@ export default function Hero() {
                 </h2>
 
                 <p className="mx-auto mt-3 max-w-2xl text-on-surface-variant">
-                  En Achi Veterinaria encontrarás accesorios para paseo, descanso,
+                  En Hachi Veterinaria encontrarás accesorios para paseo, descanso,
                   alimentación, transporte y cuidado diario de perros y gatos.
                 </p>
               </div>
@@ -421,7 +421,7 @@ export default function Hero() {
                     </p>
 
                     <a
-                      href="https://wa.me/526647828882?text=Hola,%20me%20gustaría%20recibir%20información%20sobre%20los%20productos%20de%20Achi%20Veterinaria."
+                      href="https://wa.me/526647828882?text=Hola,%20me%20gustaría%20recibir%20información%20sobre%20los%20productos%20de%20Hachi%20Veterinaria."
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-3 rounded-full bg-[#25D366] px-8 py-5 text-lg font-semibold text-white shadow-xl transition-all hover:scale-105 hover:bg-[#1ebe5d]"

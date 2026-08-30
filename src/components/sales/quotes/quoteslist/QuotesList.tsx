@@ -63,7 +63,7 @@ export default function QuotesList({ onSelected, resetChecks, onResetComplete, s
               <tr key={quote.ID_Sale} onClick={() => setSelectedIds([quote.ID_Sale])} className={`cursor-pointer ${selectedIds.includes(quote.ID_Sale) ? "bg-[#c70063]/5" : ""}`}>
                 <td><input aria-label={`Seleccionar cotización ${quote.ID_Sale}`} type="checkbox" checked={selectedIds.includes(quote.ID_Sale)} onChange={() => setSelectedIds((current) => current.includes(quote.ID_Sale) ? current.filter((id) => id !== quote.ID_Sale) : [...current, quote.ID_Sale])} onClick={(event) => event.stopPropagation()} /></td>
                 <td><span className="font-mono font-bold text-slate-900">{formatFolio(quote.ID_Sale)}</span></td>
-                <td>{quote.user?.Name || <span className="text-slate-400">Público general</span>}</td>
+                <td>{quote.user?.Name ?? <span className="text-slate-400">{quote.ID_User ? "Cliente inactivo o no disponible" : "Público general"}</span>}</td>
                 <td className="font-semibold text-slate-900">{currency.format(Number(quote.Total) || 0)}</td>
                 <td>{quote.operator?.Name || <span className="text-slate-400">Sin asignar</span>}</td>
                 <td>{quote.DocumentStatus === "CONVERTED" ? <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">Venta {formatFolio(quote.ConvertedSaleId)}</span> : <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700">Activa</span>}</td>

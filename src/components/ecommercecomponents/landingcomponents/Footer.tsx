@@ -5,9 +5,9 @@ export default function Footer() {
         <div className="text-center md:text-left">
           <div className="mb-4 flex items-center justify-center gap-3 md:justify-start">
             <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl bg-white">
-              <img alt="Achi Veterinaria" className="h-full w-full object-cover" src="/logo.png" />
+              <img alt="Hachi Veterinaria" className="h-full w-full object-cover" src="/logo.png" />
             </div>
-            <span className="text-xl font-extrabold">Achi Veterinaria</span>
+            <span className="text-xl font-extrabold">Hachi Veterinaria</span>
           </div>
           <p className="mx-auto max-w-sm text-sm leading-relaxed text-white/70 md:mx-0">
             Atención veterinaria y productos seleccionados para cuidar a tus mascotas con responsabilidad y cariño.
@@ -29,7 +29,7 @@ export default function Footer() {
           <p className="max-w-xs text-sm leading-relaxed text-white/70">
             Cuidamos cada detalle para ofrecer una experiencia clara, cercana y segura.
           </p>
-          <p className="mt-6 text-xs text-white/50">© 2026 Achi Veterinaria. Todos los derechos reservados.</p>
+          <p className="mt-6 text-xs text-white/50">© 2026 Hachi Veterinaria. Todos los derechos reservados.</p>
         </div>
       </div>
     </footer>

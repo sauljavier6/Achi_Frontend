@@ -24,7 +24,7 @@ const SuppliersPage = () => {
         });
     },
     onSuccess: () => {
-        toast.success("Proveedor(es) eliminado(s) correctamente", {
+        toast.success("Proveedor(es) inactivado(s) sin alterar compras históricas", {
         position: "top-right",
         progressClassName: "custom-progress",
         });
@@ -37,12 +37,13 @@ const SuppliersPage = () => {
   };
 
   const handleCreateProveedor = () => {
+    setSupplierToEdit(null);
     setModalOpen(true);
   };
 
   const handleDeleteProduct = () => {
     const label = selectedIds.length === 1 ? "este proveedor" : `estos ${selectedIds.length} proveedores`;
-    if (!window.confirm(`¿Deseas eliminar ${label}? Esta acción no se puede deshacer.`)) return;
+    if (!window.confirm(`¿Deseas inactivar ${label}? Las compras históricas se conservarán.`)) return;
     mutate(selectedIds);
     setSelectedIds([])
   };
@@ -101,7 +102,7 @@ const SuppliersPage = () => {
                 : 'rounded-xl border border-red-600 bg-red-600 text-white hover:bg-red-700'}
             `}
           >
-            Eliminar
+            Inactivar
           </button>
           )}
           
@@ -113,7 +114,7 @@ const SuppliersPage = () => {
       onResetComplete={() => setResetChecks(false)} searchTerm={searchTerm} />
 
       {modalOpen && (
-        <ModalSuppliers onClose={() => setModalOpen(false)} onEdit={supplierToEdit} />
+        <ModalSuppliers key={supplierToEdit ? `edit-${supplierToEdit}` : "new"} onClose={() => { setModalOpen(false); setSupplierToEdit(null); }} onEdit={supplierToEdit} />
       )}
     </section>
   );

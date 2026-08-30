@@ -2,9 +2,15 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import {
+  downloadFacturaPDF,
+  downloadFacturaXML,
   getFacturacionSaleById,
+  invoiceSaleFromGlobal,
   postFactura,
+  sendFacturaEmail,
+  validateFactura,
 } from "../../../api/Post/FacturacionApi/FacturacionApi";
+import { SAT_CFDI_USES, SAT_FISCAL_REGIMES, SAT_PAYMENT_FORMS, SAT_PAYMENT_METHODS } from "../../../constants/satCatalogs";
 
 interface Iva {
   Description: string;
@@ -34,6 +40,11 @@ interface Item {
 
 const FacturaForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [issued, setIssued] = useState<{ uuid: string; serie?: string; folio?: string } | null>(null);
+  const [emailRecipient, setEmailRecipient] = useState("");
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [preflight, setPreflight] = useState<{ ready: boolean; issues: string[]; warnings: string[]; checks: { key: string; label: string; ok: boolean }[] } | null>(null);
+  const [isValidating, setIsValidating] = useState(false);
   const [searchTerm, setSearchTerm] = useState<number | null>(null);
   const [debouncedTicket, setDebouncedTicket] = useState<number | null>(null);
   const [pago, setPago] = useState({
@@ -46,7 +57,7 @@ const FacturaForm = () => {
     razonsocial: "",
     usoCFDI: "",
     regimenFiscal: "",
-    codigopostal: "S01",
+    codigopostal: "",
   });
 
   useEffect(() => {
@@ -57,11 +68,10 @@ const FacturaForm = () => {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  const { data, isFetching } = useQuery({
+  const { data, isFetching, refetch } = useQuery({
     queryKey: ["facturacionbyid", debouncedTicket],
     queryFn: () => getFacturacionSaleById(debouncedTicket),
     enabled: !!debouncedTicket,
-    placeholderData: (prev) => prev,
   });
 
   useEffect(() => {
@@ -82,30 +92,37 @@ const FacturaForm = () => {
   const iva = data?.Iva;
   const total = data?.Total;
 
+  const buildPayload = () => ({
+    ID_Sale: data?.ID_Sale,
+    RFC: receptor.rfc, RazonSocial: receptor.razonsocial, CodigoPostal: receptor.codigopostal,
+    RegimenFiscal: receptor.regimenFiscal, UsoCFDI: receptor.usoCFDI,
+    FormaPago: pago.formaPago, MetodoPago: pago.metodoPago,
+    Subtotal: subtotal, Iva: iva, Total: total, Items: data?.SaleProduct,
+  });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!hasData) return;
     // Aquí va el timbrado
-    const datafactura = {
-      ID_Sale: data?.ID_Sale,
-      RFC: receptor.rfc,
-      RazonSocial: receptor.razonsocial,
-      CodigoPostal: receptor.codigopostal,
-      RegimenFiscal: receptor.regimenFiscal,
-      UsoCFDI: receptor.usoCFDI,
-      FormaPago: pago.formaPago,
-      MetodoPago: pago.metodoPago,
-      Subtotal: subtotal,
-      Iva: iva,
-      Total: total,
-      Items: data?.SaleProduct,
-    };
+    if (!preflight?.ready) return toast.error("Corrige la validación previa antes de timbrar");
+    const datafactura = buildPayload();
 
 
     try {
       setIsSubmitting(true);
-      await postFactura(datafactura!);
+      const result = data?.GlobalInvoiceMembership && data.GlobalInvoiceMembership.ExtractionStatus !== "COMPLETED"
+        ? await invoiceSaleFromGlobal(Number(data.ID_Sale), datafactura as never)
+        : await postFactura(datafactura!);
+      if (result.completed === false) {
+        toast.info(result.message || "La cancelación global quedó pendiente de aceptación");
+        await refetch();
+        return;
+      }
+      const emitted = result.invoice || result;
+      setIssued({ uuid: emitted.UUID || emitted.uuid, serie: emitted.Serie || emitted.serie, folio: emitted.Folio || emitted.folio });
+      setEmailRecipient(data?.Cliente?.Email?.Description || "");
       toast.success("Factura emitida correctamente");
+      await refetch();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "No fue posible emitir la factura");
     } finally {
@@ -123,17 +140,55 @@ const FacturaForm = () => {
     !pago.formaPago ||
     !pago.metodoPago;
 
-  const yaTimbrado = (data?.FacturacionTicket?.length ?? 0) > 0;
+  useEffect(() => {
+    if (!hasData || formularioIncompleto || issued) { setPreflight(null); return; }
+    let active = true;
+    const timer = setTimeout(async () => {
+      try {
+        setIsValidating(true);
+        const result = await validateFactura(buildPayload() as never);
+        if (active) setPreflight(result);
+      } catch (error) {
+        if (active) setPreflight({ ready: false, issues: [error instanceof Error ? error.message : "No fue posible validar"], warnings: [], checks: [] });
+      } finally { if (active) setIsValidating(false); }
+    }, 500);
+    return () => { active = false; clearTimeout(timer); };
+  }, [data?.ID_Sale, receptor.rfc, receptor.razonsocial, receptor.codigopostal, receptor.regimenFiscal, receptor.usoCFDI, pago.formaPago, pago.metodoPago, hasData, formularioIncompleto, issued]);
 
-  const disable = formularioIncompleto || yaTimbrado;
+  const yaTimbrado = Boolean(
+    data?.FacturacionTicket?.some(
+      (factura: { Status?: string; UUID?: string; Estado?: boolean }) =>
+        factura.Status === "STAMPED" || Boolean(factura.UUID) || factura.Estado === true
+    )
+  );
+  const globalMembership = data?.GlobalInvoiceMembership;
+  const globalPending = Boolean(globalMembership && globalMembership.ExtractionStatus !== "COMPLETED");
+
+  const disable = formularioIncompleto || yaTimbrado || isValidating || !preflight?.ready;
 
 
 
   const ticketValido = typeof debouncedTicket === "number" && debouncedTicket > 0;
 
+  const handleInvoiceEmail = async () => {
+    if (!issued?.uuid) return;
+    try {
+      setIsSendingEmail(true);
+      const result = await sendFacturaEmail(issued.uuid, emailRecipient);
+      toast.success(result.message || "Factura enviada correctamente");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No fue posible enviar la factura");
+    } finally { setIsSendingEmail(false); }
+  };
+
   return (
     <form onSubmit={handleSubmit} className="w-full min-w-0">
       <div className="mb-7"><p className="text-sm font-semibold text-[#c70063]">Facturación</p><h2 className="text-2xl font-bold text-slate-900">Emitir factura</h2><p className="text-sm text-slate-500">Busca una venta, verifica los datos fiscales y emite el comprobante.</p></div>
+
+      {issued && <section className="mb-7 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4 sm:p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"><div><span className="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700">CFDI timbrado</span><h3 className="mt-3 text-2xl font-bold text-slate-900">La factura está lista</h3><p className="mt-1 text-sm text-slate-600">Folio {issued.serie}{issued.folio} · Los documentos fiscales ya pueden descargarse o enviarse.</p><button type="button" onClick={() => navigator.clipboard.writeText(issued.uuid).then(() => toast.success("UUID copiado"))} className="mt-3 break-all text-left font-mono text-xs text-[#007782] hover:underline">UUID: {issued.uuid}</button></div><div className="grid min-w-[260px] grid-cols-2 gap-2"><button type="button" onClick={() => downloadFacturaPDF(issued.uuid)} className="rounded-lg bg-[#c70063] px-4 py-3 font-bold text-white">Descargar PDF</button><button type="button" onClick={() => downloadFacturaXML(issued.uuid)} className="rounded-lg border border-[#007782]/25 bg-white px-4 py-3 font-bold text-[#007782]">Descargar XML</button></div></div>
+        <div className="mt-5 border-t border-emerald-200 pt-4"><p className="text-sm font-bold text-slate-800">Enviar PDF y XML por correo</p><div className="mt-2 flex flex-col gap-2 sm:flex-row"><input type="email" value={emailRecipient} onChange={e => setEmailRecipient(e.target.value)} placeholder="cliente@correo.com" className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-4 py-3"/><button type="button" disabled={isSendingEmail || !emailRecipient.trim()} onClick={handleInvoiceEmail} className="rounded-lg bg-[#007782] px-5 py-3 font-bold text-white disabled:opacity-50">{isSendingEmail ? "Enviando…" : "Enviar factura"}</button></div></div>
+      </section>}
 
       {/* =======================
          DATOS DEL TICKET
@@ -164,7 +219,7 @@ const FacturaForm = () => {
               w-full rounded-md border px-3 py-2 text-sm transition
               focus:outline-none focus:ring-2
               ${
-                data?.FacturacionTicket
+                yaTimbrado
                   ? "border-yellow-400 focus:ring-yellow-400 focus:border-yellow-400"
                   : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
               }
@@ -211,7 +266,7 @@ const FacturaForm = () => {
               <div className="flex items-center gap-2 rounded-md border border-green-300 bg-green-50 px-3 py-2">
                 <span className="text-green-600 text-sm">✅</span>
                 <div className="text-sm text-green-800">
-                  Ticket <strong>válido</strong>, listo para timbrar
+                  {globalPending ? <>Incluido en una <strong>factura global</strong>; se aplicará el flujo SAT</> : <>Ticket <strong>válido</strong>, listo para timbrar</>}
                 </div>
               </div>
             )}
@@ -225,6 +280,7 @@ const FacturaForm = () => {
          ======================= */}
       {hasData && (
         <>
+          {globalPending && <section className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 sm:p-5"><p className="font-bold">Venta incluida en factura global</p><p className="mt-1">El sistema cancelará la global con motivo 04, emitirá una global corregida sin esta venta y finalmente timbrará la factura individual. Si el SAT deja la cancelación pendiente, podrás continuar después sin duplicar comprobantes.</p>{globalMembership.ExtractionStatus && <p className="mt-2 text-xs font-semibold">Etapa actual: {globalMembership.ExtractionStatus}</p>}</section>}
           {/* DATOS DEL RECEPTOR */}
           <section className="mb-7 rounded-2xl border border-slate-200 p-4 sm:p-5">
             <h3 className="text-sm font-semibold text-gray-700 mb-3 border-b pb-1">
@@ -296,11 +352,7 @@ const FacturaForm = () => {
                     focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Selecciona régimen fiscal</option>
-                  <option value="601">601 - General de Ley</option>
-                  <option value="612">
-                    612 - Personas Físicas con Actividades Empresariales
-                  </option>
-                  <option value="616">616 - Sin obligaciones fiscales</option>
+                  {SAT_FISCAL_REGIMES.map(([code, label]) => <option key={code} value={code}>{code} - {label}</option>)}
                 </select>
               </div>
 
@@ -317,8 +369,7 @@ const FacturaForm = () => {
                     focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Selecciona</option>
-                  <option value="G03">G03 - Gastos en general</option>
-                  <option value="S01">S01 - Sin efectos fiscales</option>
+                  {SAT_CFDI_USES.map(([code, label]) => <option key={code} value={code}>{code} - {label}</option>)}
                 </select>
               </div>
             </div>
@@ -343,9 +394,7 @@ const FacturaForm = () => {
                   className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-white
                 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
-                  <option value="01">01 - Efectivo</option>
-                  <option value="03">03 - Transferencia</option>
-                  <option value="04">04 - Tarjeta</option>
+                  {SAT_PAYMENT_FORMS.map(([code, label]) => <option key={code} value={code}>{code} - {label}</option>)}
                 </select>
               </div>
 
@@ -361,8 +410,7 @@ const FacturaForm = () => {
                   className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-white
                 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
-                  <option value="PUE">PUE - Pago en una sola exhibición</option>
-                  <option value="PPD">PPD - Pago en parcialidades</option>
+                  {SAT_PAYMENT_METHODS.map(([code, label]) => <option key={code} value={code}>{code} - {label}</option>)}
                 </select>
               </div>
             </div>
@@ -411,6 +459,13 @@ const FacturaForm = () => {
             </div>
           </div>
 
+          {!formularioIncompleto && <section className={`mb-6 rounded-2xl border p-4 ${preflight?.ready ? "border-emerald-200 bg-emerald-50/50" : "border-amber-200 bg-amber-50/50"}`}>
+            <div className="flex items-center justify-between gap-3"><div><p className="font-bold text-slate-900">Validación previa</p><p className="text-xs text-slate-500">Comprobación local; no consume folios de Facturama.</p></div>{isValidating && <span className="text-sm text-[#007782]">Validando…</span>}{!isValidating && preflight && <span className={`rounded-full px-3 py-1 text-xs font-bold ${preflight.ready ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-800"}`}>{preflight.ready ? "Listo para timbrar" : "Requiere atención"}</span>}</div>
+            {preflight?.checks?.length ? <div className="mt-4 grid gap-2 sm:grid-cols-2">{preflight.checks.map(check => <div key={check.key} className="flex items-center gap-2 rounded-lg bg-white/80 px-3 py-2 text-sm"><span className={check.ok ? "text-emerald-600" : "text-red-600"}>{check.ok ? "✓" : "×"}</span><span>{check.label}</span></div>)}</div> : null}
+            {preflight?.issues?.length ? <ul className="mt-3 space-y-1 text-sm text-red-700">{preflight.issues.map(issue => <li key={issue}>• {issue}</li>)}</ul> : null}
+            {preflight?.warnings?.length ? <ul className="mt-3 space-y-1 text-sm text-amber-700">{preflight.warnings.map(warning => <li key={warning}>• {warning}</li>)}</ul> : null}
+          </section>}
+
           <button
             disabled={disable || isSubmitting}
             type="submit"
@@ -423,7 +478,7 @@ const FacturaForm = () => {
               }
             `}
           >
-            {isSubmitting ? "Emitiendo factura..." : "Emitir factura"}
+            {isSubmitting ? "Procesando flujo fiscal..." : globalPending ? (globalMembership.ExtractionStatus === "WAITING_GLOBAL_CANCELLATION" ? "Continuar proceso SAT" : "Extraer de global y facturar") : "Emitir factura"}
           </button>
         </>
       )}

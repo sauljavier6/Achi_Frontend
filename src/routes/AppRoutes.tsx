@@ -29,6 +29,11 @@ import AdminLayout from "../layouts/AdminLayout";
 import PaymentPage from "../pages/paymentpage/PaymentPage";
 import PaymentResultPage from "../pages/paymentpage/PaymentResultPage";
 import SubCategoryPage from "../pages/subcategorypage/SubCategoryPage";
+import SettingsPage from "../pages/settingspage/SettingsPage";
+import SecurityPage from "../pages/securitypage/SecurityPage";
+import InventoryAlertsPage from "../pages/inventoryalertspage/InventoryAlertsPage";
+import CouponsPage from "../pages/couponspage/CouponsPage";
+import FinancialPage from "../pages/financialpage/FinancialPage";
 
 const AppRoutes = () => {
   return (
@@ -65,11 +70,17 @@ const AppRoutes = () => {
             <Route path="compras" element={<ComprasPage />} />
             <Route path="proveedores" element={<SuppliersPage />} />
             <Route path="facturas" element={<FacturasPage />} />
+            <Route path="facturas-global" element={<FacturasPage />} />
+            <Route path="complementos" element={<FacturasPage />} />
             <Route path="facturacion" element={<FacturacionPage />} />
             <Route path="pedidos" element={<SalesWebPage />} />
             <Route path="categorias" element={<CategoryPage />} />
             <Route path="subcategorias" element={<SubCategoryPage />} />
+            <Route path="alertas-inventario" element={<InventoryAlertsPage />} />
+            <Route path="cupones" element={<CouponsPage />} />
+            <Route path="finanzas" element={<FinancialPage />} />
           </Route>
+          <Route element={<RoleRoute allow={["Administrador"]} />}><Route path="configuracion" element={<SettingsPage />} /><Route path="seguridad" element={<SecurityPage />} /></Route>
         </Route>
       </Route>
 

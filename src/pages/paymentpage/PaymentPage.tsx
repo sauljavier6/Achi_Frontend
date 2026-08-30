@@ -1,14 +1,26 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { FaHeadset, FaShieldAlt } from "react-icons/fa";
 import { createCheckout } from "../../api/Ecommerce/mercadoPagoApi/MercadoPagoApi";
 import { useCart } from "../../context/CartContext";
+import { validateCoupon } from "../../api/couponsApi";
 
 export default function PaymentPage() {
-  const { state, getSubTotal, getIva, getTotal, getEnvio, clearCart } = useCart();
+  const { state, getSubTotal, getIva, getTotal, getEnvio } = useCart();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
+  const [validatingCoupon, setValidatingCoupon] = useState(false);
+  const [couponMessage, setCouponMessage] = useState("");
   const [form, setForm] = useState({ name: "", email: "", phone: "", address: "", colonia: "", city: "", cp: "" });
+  const cartSignature = state.items.map(({ ID_Stock, Quantity }) => `${ID_Stock}:${Quantity}`).join("|");
+
+  useEffect(() => {
+    setAppliedCoupon(null);
+    setCouponCode("");
+    setCouponMessage("");
+  }, [cartSignature]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -28,8 +40,8 @@ export default function PaymentPage() {
         phone: form.phone,
         address: `${form.address}, ${form.colonia}, ${form.city}, ${form.cp}`,
         items: state.items.map(({ ID_Product, ID_Stock, Quantity }) => ({ ID_Product, ID_Stock, Quantity })),
+        CouponCode: appliedCoupon?.code,
       });
-      clearCart();
       window.location.assign(checkout.checkoutUrl);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Error al procesar el pedido");
@@ -37,6 +49,22 @@ export default function PaymentPage() {
       setLoading(false);
     }
   }
+
+  async function applyCoupon() {
+    if (!couponCode.trim()) return setCouponMessage("Escribe un código de cupón.");
+    setValidatingCoupon(true); setCouponMessage("");
+    try {
+      const result = await validateCoupon(couponCode, state.items.map(({ ID_Stock, Quantity }) => ({ ID_Stock, Quantity })));
+      setAppliedCoupon({ code: result.code, discount: Number(result.discount) });
+      setCouponCode(result.code);
+      setCouponMessage(`Cupón aplicado: ahorras $${Number(result.discount).toFixed(2)}`);
+    } catch (error) {
+      setAppliedCoupon(null); setCouponMessage(error instanceof Error ? error.message : "El cupón no es válido");
+    } finally { setValidatingCoupon(false); }
+  }
+
+  const discount = Math.min(getTotal(), Number(appliedCoupon?.discount || 0));
+  const checkoutTotal = Math.max(0, getTotal() - discount);
 
   const field = (key: keyof typeof form, label: string, placeholder: string, type = "text") => (
     <label className="flex flex-col gap-2 text-sm font-bold text-gray-700">
@@ -67,18 +95,20 @@ export default function PaymentPage() {
           </p>
         </div>
         <button disabled={loading} className="w-full rounded-full bg-primary py-4 font-bold text-white disabled:opacity-50">
-          {loading ? "Procesando…" : `Continuar a Mercado Pago · $${getTotal().toFixed(2)}`}
+          {loading ? "Procesando…" : `Continuar a Mercado Pago · $${checkoutTotal.toFixed(2)}`}
         </button>
         {message && <p className="text-center font-semibold text-red-600">{message}</p>}
       </form>
       <aside className="space-y-6 lg:col-span-4">
         <div className="rounded-3xl bg-white p-7 shadow-md">
           <h2 className="mb-5 text-xl font-bold">Resumen</h2>
+          <div className="mb-5 space-y-2"><label className="text-sm font-bold text-gray-700">Cupón</label><div className="flex gap-2"><input disabled={Boolean(appliedCoupon)} value={couponCode} onChange={(event) => { setCouponCode(event.target.value.toUpperCase()); setCouponMessage(""); }} placeholder="Código" className="min-w-0 flex-1 rounded-xl border border-gray-300 px-3 py-2 uppercase" />{appliedCoupon ? <button type="button" onClick={() => { setAppliedCoupon(null); setCouponCode(""); setCouponMessage(""); }} className="rounded-xl border border-red-200 px-3 font-bold text-red-600">Quitar</button> : <button type="button" onClick={applyCoupon} disabled={validatingCoupon || !state.items.length} className="rounded-xl bg-[#007782] px-3 font-bold text-white disabled:opacity-40">{validatingCoupon ? "…" : "Aplicar"}</button>}</div>{couponMessage && <p className={`text-xs font-semibold ${appliedCoupon ? "text-emerald-700" : "text-red-600"}`}>{couponMessage}</p>}</div>
           <div className="space-y-3 text-sm">
             <p className="flex justify-between"><span>Subtotal</span><b>${getSubTotal().toFixed(2)}</b></p>
             <p className="flex justify-between"><span>IVA</span><b>${getIva().toFixed(2)}</b></p>
             <p className="flex justify-between"><span>Envío</span><b>${getEnvio().toFixed(2)}</b></p>
-            <p className="flex justify-between border-t pt-4 text-xl text-primary"><b>Total</b><b>${getTotal().toFixed(2)}</b></p>
+            {discount > 0 && <p className="flex justify-between font-bold text-emerald-700"><span>Descuento ({appliedCoupon?.code})</span><span>- ${discount.toFixed(2)}</span></p>}
+            <p className="flex justify-between border-t pt-4 text-xl text-primary"><b>Total</b><b>${checkoutTotal.toFixed(2)}</b></p>
           </div>
           <p className="mt-6 flex items-center gap-2 text-xs text-gray-500"><FaShieldAlt /> El servidor verifica precios, inventario y confirmación del pago.</p>
         </div>

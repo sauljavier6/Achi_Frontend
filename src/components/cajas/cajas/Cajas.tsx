@@ -5,7 +5,6 @@ import { postCustomerSale, postSale, searchProducts } from "../../../api/Post/Sa
 import { useQuery } from "@tanstack/react-query";
 import { useMutation, useQueryClient  } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
-import { getStates } from "../../../api/Post/StateApi/StateApi";
 import { getPayments } from "../../../api/Post/PaymentApi/PaymentApi";
 import { openTicket, sendTicket } from "../../../api/Post/TicketApi/TicketApi";
 import { createRetiro } from "../../../api/Post/RetiroApi/RetiroApi";
@@ -13,6 +12,7 @@ import { getAuthUser } from "../../../utils/auth";
 import { lineTotal, numericValue, taxRate, useSaleProducts } from "../../../utils/saleSummary";
 import { getQuoteById, searchQuotesForCheckout } from "../../../api/Post/QuotesApi/QuotesApi";
 import { formatFolio } from "../../../utils/folio";
+import { validateCoupon } from "../../../api/couponsApi";
 
 interface SaleProduct {
   id: number;
@@ -38,6 +38,7 @@ interface PaymentSale {
   Description: string;
   Monto: number;
   ReferenceNumber: string;
+  State?: boolean;
 }
 
 interface SaleData {
@@ -54,6 +55,7 @@ interface SaleData {
   items: SaleItem[];
   IsCredit?: boolean;
   SourceQuoteId?: number;
+  CouponCode?: string;
 }
 
 interface LoadedQuote {
@@ -90,13 +92,15 @@ const normalizePaymentName = (value: string) => value
     const [debounced, setDebounced] = useState(search);
     const [products, setProducts, saleSummary] = useSaleProducts<SaleProduct>();
     const [customerData, setCustomerData] = useState<CustomerFormData | null>(null);
-    const [selectedState, setSelectedState] = useState(2);
     const [selectedPayment, setSelectedPayment] = useState<PaymentSale[]>([]);
     const [idSale, setIdSale] = useState<number | null>(null);
     const [paymentMethod, setPaymentMethod] = useState("");
     const [amount, setAmount] = useState("");
     const [reference, setReference] = useState("");
     const [saleMode, setSaleMode] = useState<"cash" | "credit">("cash");
+    const [couponCode, setCouponCode] = useState("");
+    const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number; description?: string } | null>(null);
+    const [validatingCoupon, setValidatingCoupon] = useState(false);
     const [searchMode, setSearchMode] = useState<"product" | "quote">("product");
     const [loadedQuote, setLoadedQuote] = useState<LoadedQuote | null>(null);
     const [isLoadingQuote, setIsLoadingQuote] = useState(false);
@@ -110,8 +114,26 @@ const normalizePaymentName = (value: string) => value
     const [activeTab, setActiveTab] = useState<"caja" | "retiro">("caja");
 
     const { itemCount, subtotal, iva, total } = saleSummary;
+    const discount = Math.min(total, Number(appliedCoupon?.discount || 0));
+    const discountFactor = total > 0 ? (total - discount) / total : 1;
+    const discountedSubtotal = subtotal * discountFactor;
+    const discountedIva = iva * discountFactor;
+    const discountedTotal = Math.max(0, total - discount);
     const paidTotal = selectedPayment.reduce((sum, payment) => sum + Number(payment.Monto), 0);
-    const remaining = Math.max(0, total - paidTotal);
+    const remaining = Math.max(0, discountedTotal - paidTotal);
+    const cartSignature = products.map((product) => `${product.id}:${product.quantity}`).join("|");
+
+    useEffect(() => {
+      setAppliedCoupon(null);
+      setCouponCode("");
+      setSelectedPayment([]);
+    }, [cartSignature, customerData?.ID_User]);
+
+    useEffect(() => {
+      if (saleMode === "cash" && selectedPayment.length === 0) {
+        setAmount(discountedTotal > 0 ? discountedTotal.toFixed(2) : "");
+      }
+    }, [discountedTotal, saleMode, selectedPayment.length]);
 
     const usuario = getAuthUser();
     const idusuario = usuario?.ID_User;
@@ -171,6 +193,7 @@ const normalizePaymentName = (value: string) => value
         setSelectedPayment([]);
         setPaymentMethod("");
         setAmount("");
+        setSaleMode("cash");
         setSearch("");
         setSearchMode("quote");
         setIdSale(null);
@@ -200,11 +223,6 @@ const normalizePaymentName = (value: string) => value
       window.history.replaceState({}, "", window.location.pathname);
     };
 
-    const { data: states } = useQuery({
-      queryKey: ['states'],
-      queryFn: getStates,
-    });
-
     const { data: paymentsData } = useQuery({
       queryKey: ['payments'],
       queryFn: getPayments,
@@ -212,6 +230,15 @@ const normalizePaymentName = (value: string) => value
     const availablePaymentMethods = (paymentsData?.data ?? []).filter(
       (payment: PaymentSale) => normalizePaymentName(payment.Description) !== "credito",
     );
+
+    useEffect(() => {
+      if (saleMode !== "cash" || paymentMethod || products.length === 0) return;
+      const defaultMethod = (paymentsData?.data ?? []).find(
+        (payment: PaymentSale) => normalizePaymentName(payment.Description) === "efectivo" && payment.State !== false,
+      );
+      if (defaultMethod) setPaymentMethod(String(defaultMethod.ID_Payment));
+    }, [paymentsData, paymentMethod, products.length, saleMode]);
+
     const selectedPaymentDescription = paymentsData?.data?.find((payment: PaymentSale) => payment.ID_Payment === Number(paymentMethod))?.Description || "";
     const isCashPayment = selectedPaymentDescription.toLowerCase().includes("efectivo");
     const tenderedAmount = Number(amount || 0);
@@ -240,6 +267,8 @@ const normalizePaymentName = (value: string) => value
           setPaymentMethod("");
           setAmount("");
           setReference("");
+          setCouponCode("");
+          setAppliedCoupon(null);
           setSaleMode("cash");
           setLoadedQuote(null);
           window.history.replaceState({}, "", window.location.pathname);
@@ -300,12 +329,12 @@ const normalizePaymentName = (value: string) => value
 
       const saleData: SaleData = {
         ID_User: customerData?.ID_User ?? 0,
-        Total: total,
-        Balance_Total: total,
-        Subtotal: subtotal,
-        Iva: iva,
+        Total: discountedTotal,
+        Balance_Total: discountedTotal,
+        Subtotal: discountedSubtotal,
+        Iva: discountedIva,
         Envio: 0,
-        ID_State: selectedState,
+        ID_State: 2,
         ID_Operador: Number(idusuario),
         Lote: Lote,
         Payment: selectedPayment.map(p => ({
@@ -323,11 +352,31 @@ const normalizePaymentName = (value: string) => value
         })),
         IsCredit: saleMode === "credit",
         SourceQuoteId: loadedQuote?.ID_Sale,
+        CouponCode: appliedCoupon?.code,
       };
 
-      if (saleMode === "credit" && !window.confirm(`¿Registrar venta a crédito por ${total.toLocaleString("es-MX", { style: "currency", currency: "MXN" })} a nombre de ${customerData?.Name}?`)) return;
+      if (saleMode === "credit" && !window.confirm(`¿Registrar venta a crédito por ${discountedTotal.toLocaleString("es-MX", { style: "currency", currency: "MXN" })} a nombre de ${customerData?.Name}?`)) return;
 
       mutate(saleData);
+    };
+
+    const handleApplyCoupon = async () => {
+      if (!couponCode.trim()) return toast.warn("Escribe un código de cupón.");
+      if (!products.length) return toast.warn("Agrega productos antes de validar el cupón.");
+      setValidatingCoupon(true);
+      try {
+        const result = await validateCoupon(couponCode, products.map((product) => ({ ID_Stock: product.id, Quantity: product.quantity })), customerData?.ID_User);
+        setAppliedCoupon({ code: result.code, discount: Number(result.discount), description: result.description });
+        setCouponCode(result.code);
+        setSelectedPayment([]);
+        setAmount(Number(result.totalAfterDiscount).toFixed(2));
+        toast.success(`Cupón ${result.code} aplicado`);
+      } catch (error) {
+        setAppliedCoupon(null);
+        toast.error(error instanceof Error ? error.message : "No fue posible aplicar el cupón");
+      } finally {
+        setValidatingCoupon(false);
+      }
     };
 
 
@@ -469,7 +518,7 @@ const normalizePaymentName = (value: string) => value
         <>
         <div className="mb-4 relative">
           {loadedQuote && <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-[#007782]/25 bg-[#007782]/5 p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs font-black uppercase tracking-wide text-[#007782]">Cotización cargada</p><p className="font-bold text-slate-900">Cotización {formatFolio(loadedQuote.ID_Sale)}{loadedQuote.customerName ? ` · ${loadedQuote.customerName}` : ""}</p><p className="text-sm text-slate-600">Se respetarán sus precios e impuestos. Las partidas no pueden modificarse durante el cobro.</p></div><button type="button" onClick={clearLoadedQuote} className="rounded-xl border border-slate-300 bg-white px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50">Quitar cotización</button></div>}
-          <div className="mb-2 flex items-center justify-between gap-3"><label className="block text-sm font-semibold text-slate-700">Agregar a la venta</label><div className="grid grid-cols-2 rounded-xl bg-slate-100 p-1 text-xs"><button type="button" disabled={Boolean(loadedQuote)} onClick={() => { setSearchMode("product"); setSearch(""); }} className={`rounded-lg px-3 py-1.5 font-semibold ${searchMode === "product" ? "bg-white text-[#c70063] shadow-sm" : "text-slate-500"}`}>Productos</button><button type="button" disabled={Boolean(loadedQuote)} onClick={() => { setSearchMode("quote"); setSearch(""); }} className={`rounded-lg px-3 py-1.5 font-semibold ${searchMode === "quote" ? "bg-white text-[#c70063] shadow-sm" : "text-slate-500"}`}>Cotización</button></div></div><div className="flex flex-col gap-2 sm:flex-row">
+          <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-semibold text-slate-700">Operación de caja</p><p className="text-xs text-slate-500">Crea una venta nueva o carga una cotización existente para cobrarla.</p></div><div className="grid grid-cols-2 rounded-xl bg-slate-100 p-1 text-xs"><button type="button" disabled={Boolean(loadedQuote)} onClick={() => { setSearchMode("product"); setSearch(""); }} className={`rounded-lg px-3 py-2 font-semibold ${searchMode === "product" ? "bg-white text-[#c70063] shadow-sm" : "text-slate-500"}`}>Nueva venta</button><button type="button" disabled={Boolean(loadedQuote)} onClick={() => { setSearchMode("quote"); setSearch(""); }} className={`rounded-lg px-3 py-2 font-semibold ${searchMode === "quote" ? "bg-white text-[#c70063] shadow-sm" : "text-slate-500"}`}>Cargar cotización</button></div></div><div className="flex flex-col gap-2 sm:flex-row">
             <input
               type="text"
               value={search}
@@ -689,14 +738,24 @@ const normalizePaymentName = (value: string) => value
 
         <div translate="no" className="notranslate mb-5 grid gap-4 rounded-2xl bg-slate-50 p-4 sm:grid-cols-[1fr_auto] sm:items-center">
           <div className="w-full text-sm text-slate-600">
-            <p className="flex justify-between gap-8"><span>Subtotal</span><span>{`$${subtotal.toFixed(2)}`}</span></p>
-            <p className="flex justify-between gap-8"><span>IVA</span><span>{`$${iva.toFixed(2)}`}</span></p>
-            <p className="mt-2 flex justify-between gap-8 border-t border-slate-200 pt-2 text-lg font-bold text-slate-900"><span>Total</span><span>{`$${total.toFixed(2)}`}</span></p>
+            <p className="flex justify-between gap-8"><span>Subtotal</span><span>{`$${discountedSubtotal.toFixed(2)}`}</span></p>
+            <p className="flex justify-between gap-8"><span>IVA</span><span>{`$${discountedIva.toFixed(2)}`}</span></p>
+            {discount > 0 && <p className="flex justify-between gap-8 font-semibold text-emerald-700"><span>Descuento ({appliedCoupon?.code})</span><span>- ${discount.toFixed(2)}</span></p>}
+            <p className="mt-2 flex justify-between gap-8 border-t border-slate-200 pt-2 text-lg font-bold text-slate-900"><span>Total</span><span>{`$${discountedTotal.toFixed(2)}`}</span></p>
           </div>
           <button onClick={handleCreateCustomer} disabled={Boolean(loadedQuote?.customerId)} className="rounded-xl border border-[#007782]/30 bg-white px-4 py-2.5 font-semibold text-[#007782] hover:bg-[#007782]/5 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400 disabled:hover:bg-white">
             {customerData ? "Cambiar cliente" : "Agregar cliente"}
           </button>
         </div>
+
+        <section className="mb-5 rounded-2xl border border-[#c70063]/15 bg-white p-4">
+          <p className="mb-2 text-sm font-bold text-slate-800">Cupón de descuento</p>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <input value={couponCode} onChange={(event) => setCouponCode(event.target.value.toUpperCase())} disabled={Boolean(appliedCoupon)} placeholder="Ej. BIENVENIDA10" className="min-h-11 min-w-0 flex-1 rounded-xl border border-slate-300 px-3 py-2 uppercase outline-none focus:border-[#c70063]" />
+            {appliedCoupon ? <button type="button" onClick={() => { setAppliedCoupon(null); setCouponCode(""); setSelectedPayment([]); setAmount(total.toFixed(2)); }} className="rounded-xl border border-red-200 px-4 py-2.5 font-bold text-red-600">Quitar cupón</button> : <button type="button" onClick={handleApplyCoupon} disabled={validatingCoupon || products.length === 0} className="rounded-xl bg-[#007782] px-4 py-2.5 font-bold text-white disabled:opacity-40">{validatingCoupon ? "Validando…" : "Aplicar"}</button>}
+          </div>
+          {appliedCoupon && <p className="mt-2 text-sm font-semibold text-emerald-700">Descuento aplicado: ${discount.toFixed(2)}{appliedCoupon.description ? ` · ${appliedCoupon.description}` : ""}</p>}
+        </section>
 
         {customerData && (
           <div className="mb-5 flex items-start justify-between gap-3 rounded-2xl border border-[#007782]/20 bg-[#007782]/5 p-4">
@@ -709,24 +768,6 @@ const normalizePaymentName = (value: string) => value
         {saleMode === "credit" && <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"><p className="font-bold">El cliente pagará después</p><p>El total quedará como saldo pendiente y aparecerá en Ventas para registrar abonos. Es obligatorio asignar un cliente.</p></div>}
 
         <div className="flex flex-col md:flex-wrap md:flex-row justify-between items-start md:items-center gap-4 mb-4">
-          {saleMode === "cash" && <div className="text-sm w-full md:flex-1 md:min-w-[200px]">
-            <select
-              id="tipoPago"
-              name="tipoPago"
-              className="border rounded px-3 py-2 w-full"
-              value={selectedState}
-              onChange={(e) => setSelectedState(Number(e.target.value))}
-            >
-              <option value="" disabled>Selecciona un estado</option>
-              {isLoading && <option>Cargando...</option>}
-              {states?.map((state: any) => (
-                <option key={state.ID_State} value={state.ID_State}>
-                  {state.Description}
-                </option>
-              ))}
-            </select>
-          </div>}
-
           {saleMode === "cash" && <div className="text-sm w-full md:flex-1 md:min-w-[200px]">
             <select
               id="metodoPago"
@@ -746,10 +787,10 @@ const normalizePaymentName = (value: string) => value
         </div>
 
         {saleMode === "cash" && paymentMethod && (
-          <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="w-full">
+          <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="min-w-0 w-full">
               <label htmlFor="paymentAmount" className="block text-sm font-medium text-gray-700">
-                Monto del pago
+                {isCashPayment ? "Efectivo recibido" : "Monto del pago"}
               </label>
               <input
                 type="number"
@@ -760,13 +801,12 @@ const normalizePaymentName = (value: string) => value
                 placeholder="Ej. 500.00"
                 min="0.01"
                 step="0.01"
-                className="w-full max-w-full border rounded px-3 py-2"
+                className="min-h-11 w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10"
                 required
               />
             </div>
-            {isCashPayment && tenderedAmount > 0 && <div className="col-span-full rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800"><span className="font-semibold">Cambio a entregar:</span> {change.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}</div>}
 
-            <div className="w-full">
+            <div className="min-w-0 w-full">
               <label htmlFor="reference" className="block text-sm font-medium text-gray-700">
                 Número de referencia/Notas
               </label>
@@ -777,11 +817,13 @@ const normalizePaymentName = (value: string) => value
                 value={reference}
                 onChange={(e) => setReference(e.target.value)}
                 placeholder="Ej. #REF1234"
-                className="w-full max-w-full border rounded px-3 py-2"
+                className="min-h-11 w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10"
               />
             </div>
 
-            <div className="col-span-full">
+            {isCashPayment && tenderedAmount > 0 && <div className="md:col-span-2 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800"><span className="font-semibold">Cambio a entregar:</span> {change.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}</div>}
+
+            <div className="md:col-span-2">
               <button
                 type="button"
                 onClick={handleAddPayment}

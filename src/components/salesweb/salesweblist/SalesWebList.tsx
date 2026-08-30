@@ -9,8 +9,8 @@ export interface ISale {
 }
 
 export interface ISale {
-  operator: ISale;
-  user: ISale;
+  operator?: ISale | null;
+  user?: ISale | null;
   ID_Sale: number;
   ID_User?: number;
   Total: number;
@@ -18,6 +18,7 @@ export interface ISale {
   ID_State: number;
   State?: boolean;
   StateWeb?: boolean;
+  OrderStatus?: "RECEIVED" | "PROCESSING" | "READY" | "OUT_FOR_DELIVERY" | "READY_FOR_PICKUP" | "DELIVERED" | "CANCELLED";
   ID_Operador: number;
   Batch: string;
   createdAt: string
@@ -102,7 +103,7 @@ const SalesWebList = ({onSelected, resetChecks, onResetComplete, searchTerm }:Sa
                 />
               </td>
               <td className="px-2 py-2 font-mono font-bold">{formatFolio(prod.ID_Sale)}</td>
-              <td className="px-2 py-2">{prod.ID_User? prod.user.Name: "Cliente no asignado"}</td>
+              <td className="px-2 py-2">{prod.user?.Name ?? (prod.ID_User ? "Cliente inactivo o no disponible" : "Cliente no asignado")}</td>
               <td className="px-2 py-2">{prod.Total}</td>
                             <td className="px-5 py-2">{(() => {
                 const d = new Date(prod.createdAt);
@@ -112,7 +113,7 @@ const SalesWebList = ({onSelected, resetChecks, onResetComplete, searchTerm }:Sa
                 return `${day}/${month}/${year}`;
               })()}
               </td>
-              <td className="px-2 py-2"><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${prod.StateWeb ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"}`}>{prod.StateWeb ? "Pendiente" : "Completada"}</span></td>
+              <td className="px-2 py-2">{(() => { const status = prod.OrderStatus || (prod.StateWeb ? "RECEIVED" : "DELIVERED"); const labels = { RECEIVED: "Recibido", PROCESSING: "En preparación", READY: "Surtido y listo", OUT_FOR_DELIVERY: "En camino", READY_FOR_PICKUP: "Listo para recolección", DELIVERED: "Entregado", CANCELLED: "Cancelado" }; const colors = status === "DELIVERED" ? "bg-emerald-50 text-emerald-700" : status === "CANCELLED" ? "bg-red-50 text-red-700" : status === "PROCESSING" || status === "READY" ? "bg-blue-50 text-blue-700" : "bg-amber-50 text-amber-700"; return <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${colors}`}>{labels[status]}</span>; })()}</td>
             </tr>
           ))}
         </tbody>

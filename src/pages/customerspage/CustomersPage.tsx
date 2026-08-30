@@ -82,7 +82,7 @@ const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
           });
       },
       onSuccess: () => {
-          toast.success("Cliente(s) eliminado(s) correctamente", {
+          toast.success("Cliente(s) inactivado(s) sin alterar su historial", {
           position: "top-right",
           progressClassName: "custom-progress",
           });
@@ -92,8 +92,7 @@ const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 
   const handleSaveCustomer = (data: CustomerFormData) => {
     if (data.ID_User != null) {
-      const payload = { ...data, ID_Sale: data.ID_User };
-      customerUpdateMutate(payload);
+      customerUpdateMutate(data);
     } else {
       customerCreateMutate(data);
     }
@@ -108,7 +107,7 @@ const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   const handleDelete = async () => {
     try {
       const label = isEdit.length === 1 ? "este cliente" : `estos ${isEdit.length} clientes`;
-      if (!window.confirm(`¿Deseas eliminar ${label}? Esta acción no se puede deshacer.`)) return;
+      if (!window.confirm(`¿Deseas inactivar ${label}? Las ventas y pedidos históricos se conservarán.`)) return;
       customerDeleteMutate(isEdit);
     } catch (error) {
       toast.error((error as Error).message);
@@ -158,7 +157,7 @@ const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                 ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
                 : 'rounded-xl border border-red-600 bg-red-600 text-white hover:bg-red-700'}`}
           >
-            Eliminar
+            Inactivar
           </button>
           )} 
         </div> 
@@ -168,7 +167,7 @@ const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       onResetComplete={() => setResetChecks(false)} searchTerm={searchTerm}/>
 
       {modalOpen && (
-        <ModalCustomers onClose={handleClose} onSave={handleSaveCustomer} onEdit={isEdit.length > 0 ? isEdit[0] : undefined}/>
+        <ModalCustomers key={isEdit.length > 0 ? `edit-${isEdit[0]}` : "new"} onClose={handleClose} onSave={handleSaveCustomer} onEdit={isEdit.length > 0 ? isEdit[0] : undefined}/>
       )}
     </section>
   );

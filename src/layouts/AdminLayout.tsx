@@ -1,12 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
-  Boxes, ChevronDown, CircleDollarSign, FileText, LayoutDashboard,
+  BadgeDollarSign, Boxes, ChevronDown, CircleDollarSign, FileCheck2, FileText, Globe2, LayoutDashboard,
   LogOut, Menu, PackageSearch, ReceiptText, ShoppingBag, Store,
-  Truck, Users, WalletCards, X,
+  Truck, Users, WalletCards, X, Settings, ShieldCheck, BellRing,
+  ChartNoAxesCombined,
 } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { getAuthUser } from "../utils/auth";
+import { logoutUser } from "../api/authApi/authApi";
 
 type NavItem = { label: string; to: string; icon: typeof Store };
 type NavGroup = { label: string; icon: typeof Store; items: NavItem[] };
@@ -16,19 +18,23 @@ const groups: NavGroup[] = [
     { label: "Productos", to: "/pos/productos", icon: PackageSearch },
     { label: "Categorías", to: "/pos/categorias", icon: Boxes },
     { label: "Subcategorías", to: "/pos/subcategorias", icon: Boxes },
+    { label: "Alertas de inventario", to: "/pos/alertas-inventario", icon: BellRing },
   ] },
   { label: "Ventas", icon: CircleDollarSign, items: [
     { label: "Ventas", to: "/pos/ventas", icon: CircleDollarSign },
     { label: "Cotizaciones", to: "/pos/cotizaciones", icon: ReceiptText },
     { label: "Clientes", to: "/pos/clientes", icon: Users },
+    { label: "Cupones", to: "/pos/cupones", icon: BadgeDollarSign },
   ] },
   { label: "Compras", icon: ShoppingBag, items: [
     { label: "Compras y gastos", to: "/pos/compras", icon: ShoppingBag },
     { label: "Proveedores", to: "/pos/proveedores", icon: Truck },
   ] },
   { label: "Facturación", icon: FileText, items: [
-    { label: "Facturas", to: "/pos/facturas", icon: FileText },
     { label: "Emitir factura", to: "/pos/facturacion", icon: ReceiptText },
+    { label: "Comprobantes", to: "/pos/facturas", icon: FileCheck2 },
+    { label: "Factura global", to: "/pos/facturas-global", icon: Globe2 },
+    { label: "Complementos", to: "/pos/complementos", icon: BadgeDollarSign },
   ] },
 ];
 
@@ -36,12 +42,14 @@ const directItems: NavItem[] = [
   { label: "Inicio", to: "/pos/dashboard", icon: LayoutDashboard },
   { label: "Caja", to: "/pos/cajas", icon: WalletCards },
   { label: "Pedidos web", to: "/pos/pedidos", icon: Store },
+  { label: "Finanzas y reportes", to: "/pos/finanzas", icon: ChartNoAxesCombined },
 ];
 
 export default function AdminLayout() {
   const { isAdmin, isTrabajador } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const user = getAuthUser();
@@ -51,9 +59,29 @@ export default function AdminLayout() {
   useEffect(() => {
     if (activeGroup) setOpenGroup(activeGroup);
     setSidebarOpen(false);
+    setProfileOpen(false);
   }, [activeGroup, location.pathname]);
 
-  const signOut = () => {
+  useEffect(() => {
+    if (!profileOpen) return;
+    const closeOutside = (event: PointerEvent) => {
+      if (!profileMenuRef.current?.contains(event.target as Node)) setProfileOpen(false);
+    };
+    const closeWithEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setProfileOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOutside);
+    document.addEventListener("keydown", closeWithEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOutside);
+      document.removeEventListener("keydown", closeWithEscape);
+    };
+  }, [profileOpen]);
+
+  const signOut = async () => {
+    const trustedDeviceToken = localStorage.getItem("trustedDeviceToken");
+    if (trustedDeviceToken) await logoutUser(trustedDeviceToken).catch(() => undefined);
+    localStorage.removeItem("trustedDeviceToken");
     localStorage.removeItem("token");
     navigate("/login", { replace: true });
   };
@@ -67,8 +95,8 @@ export default function AdminLayout() {
     {sidebarOpen && <button aria-label="Cerrar navegación" className="fixed inset-0 z-40 bg-black/45 lg:hidden" onClick={() => setSidebarOpen(false)} />}
     <aside className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-primary px-4 pb-4 pt-5 shadow-2xl transition-transform lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
       <div className="mb-6 flex items-center gap-3 px-2">
-        <img src="/logo.png" alt="Achi Veterinaria" className="h-11 w-11 rounded-2xl bg-white object-cover" />
-        <div className="min-w-0 text-white"><p className="truncate text-lg font-extrabold">Achi Veterinaria</p><p className="text-xs text-white/65">Punto de venta</p></div>
+        <img src="/logo.png" alt="Hachi Veterinaria" className="h-11 w-11 rounded-2xl bg-white object-cover" />
+        <div className="min-w-0 text-white"><p className="truncate text-lg font-extrabold">Hachi Veterinaria</p><p className="text-xs text-white/65">Punto de venta</p></div>
         <button className="ml-auto rounded-lg p-2 text-white/80 hover:bg-white/10 lg:hidden" onClick={() => setSidebarOpen(false)} aria-label="Cerrar menú"><X size={20} /></button>
       </div>
       <nav className="flex-1 space-y-1 overflow-y-auto pr-1" aria-label="Navegación principal">
@@ -87,6 +115,8 @@ export default function AdminLayout() {
           const open = openGroup === group.label; const Icon = group.icon;
           return <div key={group.label}><button aria-expanded={open} onClick={() => setOpenGroup(open ? null : group.label)} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-white/80 transition hover:bg-white/10"><Icon size={19} /><span className="flex-1 text-left">{group.label}</span><ChevronDown size={17} className={`transition ${open ? "rotate-180" : ""}`} /></button>{open && <div className="ml-5 space-y-1 border-l border-white/20 py-1 pl-3">{group.items.map(({ icon: ItemIcon, ...item }) => <NavLink key={item.to} to={item.to} className={navClass}><ItemIcon size={17} /><span>{item.label}</span></NavLink>)}</div>}</div>;
         })}
+        {isAdmin && <NavLink to="/pos/configuracion" className={navClass}><Settings size={19}/><span>Configuración</span></NavLink>}
+        {isAdmin && <NavLink to="/pos/seguridad" className={navClass}><ShieldCheck size={19}/><span>Permisos y auditoría</span></NavLink>}
       </nav>
       <button onClick={signOut} className="mt-3 flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-white/80 hover:bg-white/10 hover:text-white"><LogOut size={19} />Cerrar sesión</button>
     </aside>
@@ -94,8 +124,8 @@ export default function AdminLayout() {
     <div className="min-h-screen lg:pl-72">
       <header className="sticky top-0 z-30 flex h-16 items-center border-b border-black/5 bg-white/90 px-4 backdrop-blur md:px-7">
         <button onClick={() => setSidebarOpen(true)} className="mr-3 rounded-xl p-2 text-on-surface hover:bg-surface-container-low lg:hidden" aria-label="Abrir menú"><Menu size={23} /></button>
-        <div className="min-w-0"><p className="truncate text-sm font-bold">Panel administrativo</p><p className="hidden text-xs text-on-surface-variant sm:block">Gestiona la operación de Achi Veterinaria</p></div>
-        <div className="relative ml-auto">
+        <div className="min-w-0"><p className="truncate text-sm font-bold">Panel administrativo</p><p className="hidden text-xs text-on-surface-variant sm:block">Gestiona la operación de Hachi Veterinaria</p></div>
+        <div ref={profileMenuRef} className="relative ml-auto">
           <button onClick={() => setProfileOpen((open) => !open)} className="flex items-center gap-2 rounded-full border border-outline/25 bg-white p-1 pr-3 hover:bg-surface-container-low" aria-expanded={profileOpen}>
             <img className="h-9 w-9 rounded-full bg-slate-100 object-cover" src={profileImage} alt="Perfil" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = "/logo.png"; }} /><span className="hidden max-w-32 truncate text-sm font-semibold sm:block">{user?.Name || "Usuario"}</span><ChevronDown size={15} />
           </button>

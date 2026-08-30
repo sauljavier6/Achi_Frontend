@@ -3,7 +3,7 @@ const WePage = () => {
     <section className="mx-auto my-10 max-w-4xl px-4 sm:px-6 lg:px-8">
       <div className="rounded-3xl bg-white p-7 shadow-sm sm:p-10">
         <p className="font-bold uppercase tracking-widest text-secondary">Conócenos</p>
-        <h1 className="mt-2 text-3xl font-extrabold text-primary sm:text-4xl">Achi Veterinaria</h1>
+        <h1 className="mt-2 text-3xl font-extrabold text-primary sm:text-4xl">Hachi Veterinaria</h1>
         <p className="mt-5 text-lg leading-8 text-on-surface-variant">
           Somos una veterinaria y tienda para mascotas en Tijuana. Ayudamos a las familias a cuidar
           a sus compañeros con atención cercana, orientación responsable y productos seleccionados.

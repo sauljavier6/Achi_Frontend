@@ -3,16 +3,23 @@ import { useMutation } from "@tanstack/react-query";
 import { ArrowLeft, Camera, Eye, EyeOff, LoaderCircle } from "lucide-react";
 import { toast } from "react-toastify";
 import { registerUser } from "../../../api/authApi/authApi";
+import { verifyAuthCode } from "../../../api/authApi/authApi";
+import OtpPanel from "../OtpPanel";
+import type { Challenge } from "../OtpPanel";
 
 interface RegisterProps { onBack?: (back: boolean) => void }
 
 export default function Register({ onBack }: RegisterProps) {
   const [formData, setFormData] = useState({ name: "", email: "", imagen: null as File | null, password: "", phone: "" });
   const [showPassword, setShowPassword] = useState(false);
+  const [challenge, setChallenge] = useState<Challenge | null>(null);
+  const [verifying, setVerifying] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const preview = formData.imagen ? URL.createObjectURL(formData.imagen) : null;
   useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
-  const { mutate, isPending } = useMutation({ mutationFn: registerUser, onError: (error) => toast.error(error.message), onSuccess: () => { toast.success("Cuenta creada correctamente"); onBack?.(false); } });
+  const { mutate, isPending } = useMutation({ mutationFn: registerUser, onError: (error) => toast.error(error.message), onSuccess: (data) => { setChallenge(data); toast.info(data.message); } });
+
+  if (challenge) return <OtpPanel challenge={challenge} title="Confirma tu correo" text="Escribe el código que enviamos a" busy={verifying} onBack={() => setChallenge(null)} onSubmit={async(code) => { setVerifying(true); try { const data = await verifyAuthCode({ challengeId: challenge.challengeId, code, purpose: "REGISTER" }); toast.success(data.message); onBack?.(false); } catch(error) { toast.error(error instanceof Error ? error.message : "Código inválido"); } finally { setVerifying(false); } }}/>;
 
   return <div className="rounded-3xl border border-black/5 bg-white p-6 shadow-xl shadow-primary/5 sm:p-8">
     <button onClick={() => onBack?.(false)} className="mb-5 flex items-center gap-2 text-sm font-bold text-primary hover:underline"><ArrowLeft size={17} />Volver al acceso</button>

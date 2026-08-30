@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { getCompras } from "../../../../api/Post/ComprasApi/ComprasApi";
+import { formatFolio } from "../../../../utils/folio";
 
 
 interface Proveedor {
@@ -105,7 +106,7 @@ const ComprasList = ({ onDelete, resetChecks, onResetComplete, searchTerm }: Com
                 onChange={() => handleCheckboxChange(comp.ID_Compras)}
                 onClick={(e) => e.stopPropagation()}/>
               </td>
-              <td className="px-5 py-2">{comp.ID_Compras}</td>
+              <td className="px-5 py-2 font-mono font-semibold">{formatFolio(comp.ID_Compras)}</td>
               <td className="px-5 py-2">{comp.Proveedor?.Name}</td>
               <td className="px-5 py-2">${comp.Total}</td>
               <td className="px-5 py-2">${comp.Balance_Total}</td>

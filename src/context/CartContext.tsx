@@ -4,7 +4,9 @@ import {
   useReducer,
   useEffect,
   type ReactNode,
+  useState,
 } from "react";
+import { getPublicShippingSettings } from "../api/SettingsApi";
 
 interface CartItem {
   ID_Product: number;
@@ -114,6 +116,7 @@ interface CartContextProps {
 const CartContext = createContext<CartContextProps | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
+  const [shipping, setShipping] = useState(250);
   const [state, dispatch] = useReducer(cartReducer, undefined, () => ({
     items: (() => {
       try {
@@ -128,6 +131,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(state.items));
   }, [state.items]);
+  useEffect(() => { getPublicShippingSettings().then(config => setShipping(config.enabled ? Number(config.amount) : 0)).catch(() => undefined); }, []);
 
   const addItem = (item: CartItem) =>
     dispatch({ type: "ADD_ITEM", payload: item });
@@ -172,7 +176,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     );
 
   //
-  const getEnvio = () => 250;
+  const getEnvio = () => shipping;
 
   // Saleprice ya incluye IVA; únicamente se agrega el envío.
   const getTotal = () => getProductTotal() + getEnvio();

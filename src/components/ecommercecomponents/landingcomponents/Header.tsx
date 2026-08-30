@@ -93,9 +93,10 @@ export default function Header() {
             navigate("/");
             setOpen(false);
           }}
-          className="text-left text-lg font-bold text-white md:text-2xl"
+          className="flex items-center gap-2.5 text-left text-lg font-bold text-white md:text-2xl"
         >
-          Achi Veterinaria
+          <img src="/logo.png" alt="Logo de Hachi Veterinaria" className="h-10 w-10 rounded-xl bg-white object-cover md:h-12 md:w-12" />
+          <span>Hachi Veterinaria</span>
         </button>
 
         <div className="hidden items-center gap-8 md:flex">

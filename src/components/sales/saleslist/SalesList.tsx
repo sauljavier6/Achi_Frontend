@@ -1,7 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
-import { getSale } from "../../../api/Post/SaleApi/SaleApi";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { cancelSale, getSale } from "../../../api/Post/SaleApi/SaleApi";
 import { useEffect, useState } from "react";
 import { formatFolio } from "../../../utils/folio";
+import { toast } from "react-toastify";
 
 export interface ISale {
   ID_Sale: number;
@@ -9,8 +10,8 @@ export interface ISale {
 }
 
 export interface ISale {
-  operator: ISale;
-  user: ISale;
+  operator?: ISale | null;
+  user?: ISale | null;
   ID_Sale: number;
   ID_User?: number;
   Total: number;
@@ -19,6 +20,7 @@ export interface ISale {
   State?: boolean;
   ID_Operador: number;
   Batch: string;
+  DocumentStatus?: string;
 }
 
 interface SaleListProps {
@@ -32,6 +34,18 @@ const SalesList = ({onSelected, resetChecks, onResetComplete, searchTerm }:SaleL
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [page, setPage] = useState(1);
   const limit = 10;
+  const queryClient = useQueryClient();
+  const cancelMutation = useMutation({
+    mutationFn: ({ id, reason }: { id: number; reason: string }) => cancelSale(id, reason),
+    onSuccess: (result) => { toast.success(result?.data?.CreditNoteUuid ? `Nota de crédito timbrada (${result.data.CreditNoteUuid.slice(0, 8)}…). Venta cancelada e inventario restituido.` : "Venta cancelada; el inventario fue restituido"); queryClient.invalidateQueries({ queryKey: ["sales"] }); },
+    onError: (error: Error) => toast.error(error.message),
+  });
+  const requestCancellation = (sale: ISale) => {
+    const reason = window.prompt(`Motivo para cancelar la venta ${formatFolio(sale.ID_Sale)}:`)?.trim();
+    if (!reason) return;
+    if (!window.confirm("La venta se cancelará y sus existencias regresarán al inventario. ¿Continuar?")) return;
+    cancelMutation.mutate({ id: sale.ID_Sale, reason });
+  };
 
   const { data } = useQuery({
     queryKey: ['sales', page, limit, searchTerm],
@@ -89,6 +103,8 @@ const SalesList = ({onSelected, resetChecks, onResetComplete, searchTerm }:SaleL
             <th className="px-2 py-2">Deuda</th>
             <th className="px-2 py-2">Cajero</th>
             <th className="px-2 py-2">Lote</th>
+            <th className="px-2 py-2">Estado</th>
+            <th className="px-2 py-2 text-right">Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -101,11 +117,13 @@ const SalesList = ({onSelected, resetChecks, onResetComplete, searchTerm }:SaleL
                 />
               </td>
               <td className="px-2 py-2 font-mono font-bold">{formatFolio(prod.ID_Sale)}</td>
-              <td className="px-2 py-2">{prod.ID_User? prod.user.Name: "Cliente no asignado"}</td>
+              <td className="px-2 py-2">{prod.user?.Name ?? (prod.ID_User ? "Cliente inactivo o no disponible" : "Cliente no asignado")}</td>
               <td className="px-2 py-2">{prod.Total}</td>
               <td className="px-2 py-2">${prod.Balance_Total}</td>
               <td className="px-2 py-2">{prod.operator?.Name}</td>
               <td className="px-2 py-2 font-mono">{prod.Batch === "web" ? "Web" : prod.Batch.replace(/-/g, "")}</td>
+              <td className="px-2 py-2"><span className={`rounded-full px-2 py-1 text-xs font-bold ${prod.DocumentStatus === "CANCELLED" ? "bg-slate-100 text-slate-600" : "bg-emerald-50 text-emerald-700"}`}>{prod.DocumentStatus === "CANCELLED" ? "Cancelada" : "Activa"}</span></td>
+              <td className="px-2 py-2 text-right">{prod.DocumentStatus !== "CANCELLED" && <button type="button" disabled={cancelMutation.isPending} onClick={() => requestCancellation(prod)} className="rounded-xl border border-red-200 px-3 py-2 font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50">Cancelar</button>}</td>
             </tr>
           ))}
         </tbody>

@@ -2,6 +2,7 @@ export interface CheckoutItem { ID_Product: number; ID_Stock: number; Quantity: 
 export interface CheckoutRequest {
   name: string; email: string; phone: string; address: string;
   items: CheckoutItem[];
+  CouponCode?: string;
 }
 
 export async function createCheckout(datos: CheckoutRequest): Promise<{

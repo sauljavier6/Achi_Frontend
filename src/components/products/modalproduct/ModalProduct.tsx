@@ -257,6 +257,7 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
           <form onSubmit={handleSubmit} className="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-contain px-4 py-5 sm:px-6">
             {/* Inputs básicos */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <label className="min-w-0 text-xs font-semibold text-slate-500">Nombre del producto
               <input
                 type="text"
                 id="Description"
@@ -267,14 +268,18 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
                 placeholder="Nombre del producto"
                 aria-label="Nombre del producto"
                 required
-                className="min-h-11 min-w-0 w-full rounded-xl border border-slate-300 px-4 py-2 outline-none focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10"
+                className="mt-1 min-h-11 min-w-0 w-full rounded-xl border border-slate-300 px-4 py-2 text-base font-normal text-slate-900 outline-none focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10"
               />
+              </label>
 
-              <select aria-label="Estado del producto" value={products.State ? "true" : "false"} onChange={(e) => setProducts({ ...products, State: e.target.value === "true" })} className="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-4 py-2 outline-none transition focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10">
+              <label className="min-w-0 text-xs font-semibold text-slate-500">Estado
+              <select aria-label="Estado del producto" value={products.State ? "true" : "false"} onChange={(e) => setProducts({ ...products, State: e.target.value === "true" })} className="mt-1 min-h-11 w-full rounded-xl border border-slate-300 bg-white px-4 py-2 text-base font-normal text-slate-900 outline-none transition focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10">
                 <option value="true">Activo</option>
                 <option value="false">Inactivo</option>
               </select>
+              </label>
 
+              <label className="min-w-0 text-xs font-semibold text-slate-500">Categoría
               <select
                 id="ID_Category"
                 name="ID_Category"
@@ -282,7 +287,7 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
                 onChange={handleChange}
                 aria-label="Categoría"
                 required
-                className="min-h-11 min-w-0 w-full rounded-xl border border-slate-300 px-4 py-2 outline-none focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10"
+                className="mt-1 min-h-11 min-w-0 w-full rounded-xl border border-slate-300 px-4 py-2 text-base font-normal text-slate-900 outline-none focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10"
               >
                 <option value="">Selecciona categoría</option>
                 {categoryData?.data?.map((cat: CategoryOption) => (
@@ -293,7 +298,9 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
                 <option disabled>---------------------------</option>
                 <option value={-1}>➕ Crear nueva categoría</option>
               </select>
+              </label>
 
+              <label className="min-w-0 text-xs font-semibold text-slate-500">Subcategoría
               <select aria-label="Subcategoría"
                 id="ID_SubCategory"
                 name="ID_SubCategory"
@@ -306,7 +313,7 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
                   }
                   setProducts({ ...products, ID_SubCategory: value });
                 }}
-                className="min-h-11 min-w-0 w-full rounded-xl border border-slate-300 px-4 py-2 outline-none focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10"
+                className="mt-1 min-h-11 min-w-0 w-full rounded-xl border border-slate-300 px-4 py-2 text-base font-normal text-slate-900 outline-none focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10"
               >
                 <option value="">Selecciona subcategoría</option>
                 {subcategoryData?.data?.map((cat: SubCategoryOption) => (
@@ -317,7 +324,9 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
                 <option disabled>---------------------------</option>
                 <option value={-1}>➕ Crear nueva subcategoría</option>
               </select>
+              </label>
 
+              <label className="min-w-0 text-xs font-semibold text-slate-500">Código interno o de barras
               <input
                 type="text"
                 id="Code"
@@ -329,9 +338,11 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
                   setProducts({ ...products, Code: e.target.value })
                 }
                 placeholder="Código del producto"
-                className="min-h-11 min-w-0 w-full rounded-xl border border-slate-300 px-4 py-2 outline-none focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10"
+                className="mt-1 min-h-11 min-w-0 w-full rounded-xl border border-slate-300 px-4 py-2 text-base font-normal text-slate-900 outline-none focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10"
               />
+              </label>
 
+              <label className="min-w-0 text-xs font-semibold text-slate-500">IVA aplicable
               <select
                 id="Iva"
                 name="ID_Iva"
@@ -341,7 +352,7 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
                 onChange={(e) =>
                   setProducts({ ...products, ID_Iva: Number(e.target.value) })
                 }
-                className="min-h-11 min-w-0 w-full rounded-xl border border-slate-300 px-4 py-2 outline-none focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10"
+                className="mt-1 min-h-11 min-w-0 w-full rounded-xl border border-slate-300 px-4 py-2 text-base font-normal text-slate-900 outline-none focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10"
               >
                 <option value="">Selecciona IVA</option>
                 {ivaData?.data?.map((iva: IvaOption) => (
@@ -350,7 +361,9 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
                   </option>
                 ))}
               </select>
+              </label>
 
+              <label className="min-w-0 text-xs font-semibold text-slate-500">Clave de producto SAT
               <input
                 type="text"
                 id="Codesat"
@@ -361,9 +374,11 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
                   setProducts({ ...products, Codesat: e.target.value })
                 }
                 placeholder="Código SAT"
-                className="min-h-11 min-w-0 w-full rounded-xl border border-slate-300 px-4 py-2 outline-none focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10"
+                className="mt-1 min-h-11 min-w-0 w-full rounded-xl border border-slate-300 px-4 py-2 text-base font-normal text-slate-900 outline-none focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10"
               />
+              </label>
 
+              <label className="min-w-0 text-xs font-semibold text-slate-500">Imágenes del producto
               <input
                 type="file"
                 ref={fileInputRef}
@@ -371,8 +386,9 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
                 accept="image/*"
                 multiple
                 aria-label="Imágenes del producto"
-                className="min-h-11 min-w-0 w-full rounded-xl border border-slate-300 px-4 py-2 outline-none focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10"
+                className="mt-1 min-h-11 min-w-0 w-full rounded-xl border border-slate-300 px-4 py-2 text-sm font-normal text-slate-700 outline-none focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10"
               />
+              </label>
             </div>
 
             {/* Galería de imágenes */}
@@ -408,6 +424,8 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
                   key={index}
                   className="grid min-w-0 grid-cols-1 gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 sm:grid-cols-2 lg:grid-cols-4"
                 >
+                  <p className="text-xs font-bold uppercase tracking-wide text-[#c70063] sm:col-span-2 lg:col-span-4">Presentación {index + 1}</p>
+                  <label className="min-w-0 text-xs font-semibold text-slate-500">Nombre o medida
                   <input
                     type="text"
                     value={stock.Description}
@@ -417,9 +435,11 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
                       setProducts({ ...products, StockData: newStock });
                     }}
                     placeholder="Descripción"
-                    className="min-h-11 min-w-0 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 outline-none focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10"
+                    className="mt-1 min-h-11 min-w-0 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-base font-normal text-slate-900 outline-none focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10"
                   />
+                  </label>
 
+                  <label className="min-w-0 text-xs font-semibold text-slate-500">Existencias
                   <input
                     type="number"
                     value={stock.Amount === 0 ? "" : stock.Amount}
@@ -429,9 +449,11 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
                       setProducts({ ...products, StockData: newStock });
                     }}
                     placeholder="Stock"
-                    className="min-h-11 min-w-0 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 outline-none focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10"
+                    className="mt-1 min-h-11 min-w-0 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-base font-normal text-slate-900 outline-none focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10"
                   />
+                  </label>
 
+                  <label className="min-w-0 text-xs font-semibold text-slate-500">Precio de venta (IVA incluido)
                   <input
                     type="number"
                     value={stock.Saleprice === 0 ? "" : stock.Saleprice}
@@ -442,9 +464,11 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
                     }}
                     placeholder="Precio de venta (IVA incluido)"
                     aria-label="Precio de venta con IVA incluido"
-                    className="min-h-11 min-w-0 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 outline-none focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10"
+                    className="mt-1 min-h-11 min-w-0 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-base font-normal text-slate-900 outline-none focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10"
                   />
+                  </label>
 
+                  <label className="min-w-0 text-xs font-semibold text-slate-500">Precio de compra
                   <input
                     type="number"
                     value={stock.Purchaseprice === 0 ? "" : stock.Purchaseprice}
@@ -454,8 +478,9 @@ const ModalProduct = ({ onClose, onEdit }: ModalProductProps) => {
                       setProducts({ ...products, StockData: newStock });
                     }}
                     placeholder="Precio compra"
-                    className="min-h-11 min-w-0 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 outline-none focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10"
+                    className="mt-1 min-h-11 min-w-0 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-base font-normal text-slate-900 outline-none focus:border-[#c70063] focus:ring-2 focus:ring-[#c70063]/10"
                   />
+                  </label>
                 </div>
               ))}
             </div>
