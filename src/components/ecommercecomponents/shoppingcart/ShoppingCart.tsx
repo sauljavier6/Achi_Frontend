@@ -196,23 +196,23 @@ export default function ShoppingCart() {
                 </h2>
 
                 <div className="mb-8 space-y-4">
-                  <div className="flex justify-between text-sm text-on-surface-variant">
+                  <div className="grid grid-cols-[1fr_7rem] items-baseline text-sm text-on-surface-variant">
                     <span>Subtotal</span>
-                    <span className="font-bold text-on-surface">
+                    <span className="text-right font-bold tabular-nums text-on-surface">
                       {subtotal === 0 ? "$0.00" : `$${subtotal.toFixed(2)}`}
                     </span>
                   </div>
 
-                  <div className="flex justify-between text-sm text-on-surface-variant">
+                  <div className="grid grid-cols-[1fr_7rem] items-baseline text-sm text-on-surface-variant">
                     <span>IVA</span>
-                    <span className="font-bold text-on-surface">
+                    <span className="text-right font-bold tabular-nums text-on-surface">
                       {iva === 0 ? "$0.00" : `$${iva.toFixed(2)}`}
                     </span>
                   </div>
 
-                  <div className="flex items-baseline justify-between text-sm text-on-surface-variant">
+                  <div className="grid grid-cols-[1fr_7rem] items-baseline text-sm text-on-surface-variant">
                     <span>Envío</span>
-                    <span className="font-bold tabular-nums text-tertiary">
+                    <span className="text-right font-bold tabular-nums text-tertiary">
                       {envio === 0 ? "$0.00" : `$${envio.toFixed(2)}`}
                     </span>
                   </div>

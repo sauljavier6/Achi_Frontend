@@ -165,8 +165,12 @@ export default function Hero() {
                     Descubre la nueva colección
                   </Link>
 
-                  <button
+                  <Link
+                    to="/nosotros"
                     className="
+                      inline-flex
+                      items-center
+                      justify-center
                       rounded-full
                       border-2 border-primary
                       bg-surface/60
@@ -180,7 +184,7 @@ export default function Hero() {
                     "
                   >
                     Nuestra historia
-                  </button>
+                  </Link>
                 </div>
               </div>
             </div>
