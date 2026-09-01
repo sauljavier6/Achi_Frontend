@@ -210,9 +210,9 @@ export default function ShoppingCart() {
                     </span>
                   </div>
 
-                  <div className="flex justify-between text-sm text-on-surface-variant">
+                  <div className="flex items-baseline justify-between text-sm text-on-surface-variant">
                     <span>Envío</span>
-                    <span className="rounded-full bg-tertiary-fixed px-3 py-1 text-xs font-bold text-tertiary">
+                    <span className="font-bold tabular-nums text-tertiary">
                       {envio === 0 ? "$0.00" : `$${envio.toFixed(2)}`}
                     </span>
                   </div>
